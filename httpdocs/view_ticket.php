@@ -395,6 +395,74 @@ $justCreated = isset($_GET['created']);
     color:var(--text);
   }
 
+  /* Internal Notes (Admin Only) */
+  .internal-notes-section {
+    background:rgba(88,166,255,.08);
+    border:2px solid var(--accent);
+    border-radius:14px;
+    padding:30px;
+    margin-bottom:20px;
+    box-shadow:0 4px 12px rgba(88,166,255,.15);
+  }
+  .internal-notes-section h3 {
+    color:var(--accent);
+    margin-bottom:8px;
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .notes-list {
+    margin:16px 0;
+  }
+  .internal-note {
+    background:var(--card);
+    border:1px solid var(--accent);
+    border-left:4px solid var(--accent);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .note-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--input-border);
+  }
+  .note-author {
+    font-weight:600;
+    font-size:14px;
+    color:var(--accent);
+  }
+  .note-time {
+    font-size:12px;
+    color:var(--muted);
+  }
+  .note-content {
+    line-height:1.6;
+    color:var(--text);
+    font-size:14px;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+  }
+  .btn-note {
+    padding:12px 24px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .btn-note:hover {
+    opacity:.9;
+    transform:translateY(-2px);
+  }
+
   /* Footer */
   footer {
     background:var(--card);
@@ -425,6 +493,7 @@ $justCreated = isset($_GET['created']);
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <a href="/support.php">Support</a>
+        <a href="/faq.php">FAQ</a>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>
@@ -546,6 +615,41 @@ $justCreated = isset($_GET['created']);
     </div>
 
     <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
+    <!-- Internal Notes Section (Admin Only) -->
+    <div class="internal-notes-section">
+      <h3>🔒 Internal Notes (Admin Only)</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+        These notes are private and only visible to admins. Customers cannot see internal notes.
+      </p>
+      
+      <!-- Display existing internal notes -->
+      <?php if (!empty($ticket['internal_notes']) && is_array($ticket['internal_notes'])): ?>
+        <div class="notes-list">
+          <?php foreach ($ticket['internal_notes'] as $note): ?>
+            <div class="internal-note">
+              <div class="note-header">
+                <span class="note-author">🔒 <?= htmlspecialchars($note['author'] ?? 'Admin') ?></span>
+                <span class="note-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($note['created_at']))) ?></span>
+              </div>
+              <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <p style="color:var(--muted);font-style:italic;margin-bottom:16px;">No internal notes yet.</p>
+      <?php endif; ?>
+      
+      <!-- Add new internal note -->
+      <form method="post" action="reply_ticket.php" style="margin-top:20px;">
+        <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticket['id']) ?>">
+        <input type="hidden" name="add_internal_note" value="1">
+        <div class="reply-form-group">
+          <textarea name="internal_note" placeholder="Add a private note (e.g., troubleshooting steps, escalation info, customer history...)..." rows="4" style="background:rgba(88,166,255,.05);border-color:var(--accent);"></textarea>
+        </div>
+        <button type="submit" class="btn-note">💾 Save Internal Note</button>
+      </form>
+    </div>
+    
     <!-- Admin Reply Form -->
     <div class="admin-reply-section">
       <h3>👨‍💼 Admin Reply</h3>

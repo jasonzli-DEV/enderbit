@@ -284,6 +284,7 @@ require_once __DIR__ . '/config.php';
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <a href="/support.php" class="active">Support</a>
+        <a href="/faq.php">FAQ</a>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>

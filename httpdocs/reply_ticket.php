@@ -12,16 +12,18 @@ $replyMessage = trim($_POST['reply_message'] ?? '');
 $isAdmin = isset($_POST['is_admin']) && $_POST['is_admin'] === '1';
 $closeTicket = isset($_POST['close_ticket']) && $_POST['close_ticket'] === '1';
 $reopenTicket = isset($_POST['reopen_ticket']) && $_POST['reopen_ticket'] === '1';
+$addInternalNote = isset($_POST['add_internal_note']) && $_POST['add_internal_note'] === '1';
+$internalNote = trim($_POST['internal_note'] ?? '');
 
 // Validate admin for admin actions
-if ($isAdmin && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
+if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
     header("Location: admin.php");
     exit;
 }
 
-// Validate input (allow empty message if just closing/reopening ticket)
-if (empty($ticketId) || (empty($replyMessage) && !$closeTicket && !$reopenTicket)) {
-    header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Reply message cannot be empty"));
+// Validate input (allow empty message if just closing/reopening ticket or adding internal note)
+if (empty($ticketId) || (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket)) {
+    header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Message cannot be empty"));
     exit;
 }
 
@@ -52,6 +54,29 @@ for ($i = 0; $i < count($tickets); $i++) {
         $ticketEmail = $tickets[$i]['email'];
         $ticketSubject = $tickets[$i]['subject'];
         $previousStatus = $tickets[$i]['status'];
+        
+        // Add internal note if provided (admin only, no email notifications)
+        if ($addInternalNote && !empty($internalNote)) {
+            if (!isset($tickets[$i]['internal_notes'])) {
+                $tickets[$i]['internal_notes'] = [];
+            }
+            
+            $tickets[$i]['internal_notes'][] = [
+                'note' => $internalNote,
+                'author' => 'Admin', // You can enhance this to track which admin
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // Save and redirect immediately for internal notes (no email needed)
+            if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
+                header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Internal note added successfully"));
+                exit;
+            } else {
+                error_log("Failed to save internal note");
+                header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Failed to save note. Please try again."));
+                exit;
+            }
+        }
         
         // Add reply if message provided
         if (!empty($replyMessage)) {

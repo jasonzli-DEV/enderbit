@@ -214,11 +214,12 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   <nav>
     <div class="container">
       <a href="/" class="logo">EnderBit</a>
-      <div class="nav-links">
+            <div class="nav-links">
+        <a href="/">Home</a>
         <a href="/services.php">Services</a>
-        <a href="/signup.php" class="active">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <a href="/support.php">Support</a>
+        <a href="/faq.php">FAQ</a>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>

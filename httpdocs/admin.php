@@ -159,6 +159,11 @@ if (isset($_POST['approve_user'])) {
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .section-header{display:flex;justify-content:space-between;align-items:center;margin:30px 0 15px;}
   .section-header h2{margin:0;}
+  .filter-controls{background:var(--input-bg);border:1px solid var(--input-border);border-radius:10px;padding:20px;margin-bottom:20px;}
+  .search-input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--input-border);background:var(--card);color:var(--text);font-size:14px;margin-bottom:12px;}
+  .filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .filter-select{flex:1;min-width:150px;padding:10px;border-radius:8px;border:1px solid var(--input-border);background:var(--card);color:var(--text);font-size:14px;}
+  .filter-results{margin-top:12px;font-size:13px;color:var(--muted);text-align:center;}
 </style>
 </head>
 <body>
@@ -274,6 +279,36 @@ if (isset($_POST['approve_user'])) {
           <h2>🎫 Support Tickets</h2>
           <span style="font-size:13px;color:var(--muted);">Sorted by newest first</span>
         </div>
+        
+        <!-- Search and Filter Controls -->
+        <div class="filter-controls">
+          <input type="text" id="searchTickets" placeholder="🔍 Search by ID, email, subject, or keywords..." class="search-input">
+          <div class="filter-row">
+            <select id="filterStatus" class="filter-select">
+              <option value="all">All Status</option>
+              <option value="open">Open Only</option>
+              <option value="closed">Closed Only</option>
+            </select>
+            <select id="filterPriority" class="filter-select">
+              <option value="all">All Priorities</option>
+              <option value="urgent">🔴 Urgent</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+            <select id="filterCategory" class="filter-select">
+              <option value="all">All Categories</option>
+              <option value="technical">💻 Technical</option>
+              <option value="billing">💳 Billing</option>
+              <option value="account">👤 Account</option>
+              <option value="feature">✨ Feature</option>
+              <option value="other">❓ Other</option>
+            </select>
+            <button id="resetFilters" class="btn-small" style="background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);">Reset Filters</button>
+          </div>
+          <div id="filterResults" class="filter-results"></div>
+        </div>
+        
         <?php
         $ticketsFile = __DIR__ . '/tickets.json';
         if (file_exists($ticketsFile)) {
@@ -347,5 +382,76 @@ if (isset($_POST['approve_user'])) {
     <?php endif; ?>
   </div>
 </div>
+
+<script>
+// Search and Filter Functionality
+(function() {
+  const searchInput = document.getElementById('searchTickets');
+  const filterStatus = document.getElementById('filterStatus');
+  const filterPriority = document.getElementById('filterPriority');
+  const filterCategory = document.getElementById('filterCategory');
+  const resetBtn = document.getElementById('resetFilters');
+  const filterResults = document.getElementById('filterResults');
+  const ticketCards = document.querySelectorAll('.ticket-card');
+
+  function applyFilters() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const statusFilter = filterStatus.value;
+    const priorityFilter = filterPriority.value;
+    const categoryFilter = filterCategory.value;
+
+    let visibleCount = 0;
+    let totalCount = ticketCards.length;
+
+    ticketCards.forEach(card => {
+      const ticketText = card.textContent.toLowerCase();
+      const ticketStatus = card.querySelector('.status-badge').textContent.toLowerCase();
+      const ticketMeta = card.querySelector('.ticket-meta').textContent.toLowerCase();
+      
+      // Search filter
+      const matchesSearch = searchTerm === '' || ticketText.includes(searchTerm);
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || ticketStatus.includes(statusFilter);
+      
+      // Priority filter
+      const matchesPriority = priorityFilter === 'all' || ticketMeta.includes(priorityFilter);
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || ticketMeta.includes(categoryFilter);
+
+      if (matchesSearch && matchesStatus && matchesPriority && matchesCategory) {
+        card.style.display = 'block';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Update results count
+    if (searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || categoryFilter !== 'all') {
+      filterResults.textContent = `Showing ${visibleCount} of ${totalCount} tickets`;
+    } else {
+      filterResults.textContent = '';
+    }
+  }
+
+  // Add event listeners
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+    filterStatus.addEventListener('change', applyFilters);
+    filterPriority.addEventListener('change', applyFilters);
+    filterCategory.addEventListener('change', applyFilters);
+    
+    resetBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      filterStatus.value = 'all';
+      filterPriority.value = 'all';
+      filterCategory.value = 'all';
+      applyFilters();
+    });
+  }
+})();
+</script>
 </body>
 </html>
