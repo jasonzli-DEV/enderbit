@@ -84,10 +84,37 @@ for ($i = 0; $i < count($tickets); $i++) {
                 $tickets[$i]['replies'] = [];
             }
             
+            // Handle file attachment for reply
+            $replyAttachmentPath = null;
+            if (isset($_FILES['reply_attachment']) && $_FILES['reply_attachment']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/uploads/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain', 'application/zip', 'application/x-zip-compressed'];
+                $maxSize = 5 * 1024 * 1024; // 5MB
+                
+                $fileType = $_FILES['reply_attachment']['type'];
+                $fileSize = $_FILES['reply_attachment']['size'];
+                $fileName = $_FILES['reply_attachment']['name'];
+                $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                
+                if ((in_array($fileType, $allowedTypes) || in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt', 'log', 'zip'])) && $fileSize <= $maxSize) {
+                    $safeFileName = $ticketId . '_reply_' . time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $fileName);
+                    $uploadPath = $uploadDir . $safeFileName;
+                    
+                    if (move_uploaded_file($_FILES['reply_attachment']['tmp_name'], $uploadPath)) {
+                        $replyAttachmentPath = 'uploads/' . $safeFileName;
+                    }
+                }
+            }
+            
             $tickets[$i]['replies'][] = [
                 'message' => $replyMessage,
                 'is_admin' => $isAdmin,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => date('Y-m-d H:i:s'),
+                'attachment' => $replyAttachmentPath
             ];
         }
         

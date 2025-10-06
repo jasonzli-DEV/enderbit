@@ -115,7 +115,6 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .message-box { background: #f0fdf4; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; border-radius: 6px; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
-.important { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin: 20px 0; }
 </style>
 </head>
 <body>
@@ -130,6 +129,8 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     <div class='ticket-info'>
       <p><strong>Ticket ID:</strong> {$ticketId}</p>
       <p><strong>Subject:</strong> {$subject}</p>
+      <p><strong>Priority:</strong> " . ucfirst($priority) . "</p>
+      <p><strong>Category:</strong> " . ucfirst($category) . "</p>
       <p><strong>Status:</strong> Open</p>
       <p><strong>Created:</strong> " . date('F j, Y, g:i a') . "</p>
     </div>
@@ -139,11 +140,10 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       <p style='margin-top: 12px;'>" . nl2br(htmlspecialchars($description)) . "</p>
     </div>
 
-    <div class='important'>
-      <p style='margin: 0;'><strong>💬 What happens next?</strong> Our support team will review your ticket and respond via email. You can track all updates and add additional information by viewing your ticket online.</p>
-    </div>
+    <p><strong>💬 What happens next?</strong></p>
+    <p>Our support team will review your ticket and respond via email. You can track all updates and add additional information by viewing your ticket online.</p>
 
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View Full Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View & Track Your Ticket</a>
 
     <p style='margin-top: 20px;'>Thank you for contacting EnderBit support!</p>
   </div>
@@ -170,7 +170,7 @@ try {
     }
 }
 
-// Send notification to admin
+// Send notification to admin using SMTP
 $adminEmail = $config['smtp']['from_email'];
 $adminEmailSubject = "New Ticket Created: {$subject} [#{$ticketId}]";
 $adminEmailBody = "
@@ -183,6 +183,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .header { background: #f0883e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
 .ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
+.message-box { background: #fff5f0; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; border-radius: 6px; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>
@@ -193,20 +194,26 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     <h1>🆕 New Support Ticket</h1>
   </div>
   <div class='content'>
-    <p>A new support ticket has been created.</p>
+    <p>A new support ticket has been created and requires your attention.</p>
     
     <div class='ticket-info'>
       <p><strong>Ticket ID:</strong> {$ticketId}</p>
       <p><strong>Customer Email:</strong> {$email}</p>
       <p><strong>Subject:</strong> {$subject}</p>
+      <p><strong>Priority:</strong> " . ucfirst($priority) . "</p>
+      <p><strong>Category:</strong> " . ucfirst($category) . "</p>
       <p><strong>Status:</strong> Open</p>
       <p><strong>Created:</strong> " . date('F j, Y, g:i a') . "</p>
     </div>
 
-    <p><strong>Message:</strong></p>
-    <p style='background: white; padding: 15px; border-radius: 6px;'>" . nl2br(htmlspecialchars($description)) . "</p>
+    <div class='message-box'>
+      <p><strong>📝 Customer Message:</strong></p>
+      <p style='margin-top: 12px;'>" . nl2br(htmlspecialchars($description)) . "</p>
+    </div>
 
     <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View & Reply to Ticket</a>
+    
+    <p style='margin-top: 20px;'>Please respond to this ticket as soon as possible.</p>
   </div>
   <div class='footer'>
     <p>&copy; 2025 EnderBit Support System</p>
@@ -216,11 +223,16 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </html>
 ";
 
-// Send admin notification using mail() function
-$headers = "MIME-Version: 1.0\r\n";
-$headers .= "Content-type: text/html; charset=UTF-8\r\n";
-$headers .= "From: EnderBit Support <" . $adminEmail . ">\r\n";
-@mail($adminEmail, $adminEmailSubject, $adminEmailBody, $headers);
+try {
+    // Try SMTP first for admin notification
+    send_smtp_email($adminEmail, $adminEmailSubject, $adminEmailBody, $config['smtp']);
+} catch (Exception $e) {
+    // Fallback to mail() for admin
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: EnderBit Support <" . $adminEmail . ">\r\n";
+    @mail($adminEmail, $adminEmailSubject, $adminEmailBody, $headers);
+}
 
 // Redirect to success page
 header("Location: view_ticket.php?id={$ticketId}&created=1");

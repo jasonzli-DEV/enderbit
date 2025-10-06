@@ -640,6 +640,17 @@ $justCreated = isset($_GET['created']);
                 <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($reply['created_at']))) ?></span>
               </div>
               <div class="message-content"><?= htmlspecialchars($reply['message']) ?></div>
+              <?php if (!empty($reply['attachment'])): ?>
+              <div class="attachment-box">
+                <span>📎</span>
+                <a href="<?= htmlspecialchars($reply['attachment']) ?>" target="_blank" download>
+                  <?= htmlspecialchars(basename($reply['attachment'])) ?>
+                </a>
+                <?php if (file_exists(__DIR__ . '/' . $reply['attachment'])): ?>
+                <span style="color:var(--muted);font-size:13px;">(<?= number_format(filesize(__DIR__ . '/' . $reply['attachment']) / 1024, 1) ?> KB)</span>
+                <?php endif; ?>
+              </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -688,7 +699,7 @@ $justCreated = isset($_GET['created']);
       <div class="admin-notice">
         ⚠️ You are logged in as admin. Your reply will be sent to the ticket creator via email.
       </div>
-      <form method="post" action="reply_ticket.php">
+      <form method="post" action="reply_ticket.php" enctype="multipart/form-data">
         <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticket['id']) ?>">
         <input type="hidden" name="is_admin" value="1">
         
@@ -713,6 +724,13 @@ $justCreated = isset($_GET['created']);
         <div class="reply-form-group">
           <textarea id="reply-textarea" name="reply_message" placeholder="Type your reply to the customer..." required></textarea>
         </div>
+        
+        <div class="reply-form-group">
+          <label for="reply-attachment" style="display:block;margin-bottom:8px;color:var(--text);font-weight:600;font-size:14px;">📎 Attach File (Optional)</label>
+          <input type="file" id="reply-attachment" name="reply_attachment" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.log,.zip" style="width:100%;padding:10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--text);">
+          <p style="font-size:12px;color:var(--muted);margin-top:6px;">Allowed: JPG, PNG, GIF, PDF, TXT, LOG, ZIP (Max 5MB)</p>
+        </div>
+        
         <button type="submit" class="btn-submit">Send Reply</button>
         <?php if ($ticket['status'] === 'open'): ?>
         <button type="submit" name="close_ticket" value="1" class="btn-close" onclick="return confirm('Are you sure you want to close this ticket?');">Close Ticket</button>
@@ -724,12 +742,19 @@ $justCreated = isset($_GET['created']);
     <div class="admin-reply-section">
       <h3>💬 Add a Reply</h3>
       <p style="color:var(--muted);margin-bottom:16px;">Have more information to add? Reply to your ticket below.</p>
-      <form method="post" action="reply_ticket.php">
+      <form method="post" action="reply_ticket.php" enctype="multipart/form-data">
         <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticket['id']) ?>">
         <input type="hidden" name="is_admin" value="0">
         <div class="reply-form-group">
           <textarea name="reply_message" placeholder="Type your additional information here..." required></textarea>
         </div>
+        
+        <div class="reply-form-group">
+          <label for="customer-attachment" style="display:block;margin-bottom:8px;color:var(--text);font-weight:600;font-size:14px;">📎 Attach File (Optional)</label>
+          <input type="file" id="customer-attachment" name="reply_attachment" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.log,.zip" style="width:100%;padding:10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--text);">
+          <p style="font-size:12px;color:var(--muted);margin-top:6px;">Allowed: JPG, PNG, GIF, PDF, TXT, LOG, ZIP (Max 5MB)</p>
+        </div>
+        
         <button type="submit" class="btn-submit">Send Reply</button>
       </form>
     </div>
