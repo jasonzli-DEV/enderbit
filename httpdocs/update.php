@@ -17,19 +17,6 @@ function logDeployment($message) {
     $timestamp = date('Y-m-d H:i:s');
     $logEntry = "[$timestamp] $message\n";
     file_put_contents($logFile, $logEntry, FILE_APPEND);
-    return $logEntry;
-}
-
-// Function to execute git command and capture output
-function executeGitCommand($command) {
-    $output = [];
-    $returnVar = 0;
-    exec($command . ' 2>&1', $output, $returnVar);
-    return [
-        'success' => $returnVar === 0,
-        'output' => implode("\n", $output),
-        'code' => $returnVar
-    ];
 }
 
 // Handle update request
@@ -37,90 +24,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $response = ['success' => false, 'message' => '', 'log' => ''];
 
-    // Change to project directory
-    $projectDir = dirname(__DIR__);
-    chdir($projectDir);
-
     switch ($action) {
-        case 'pull':
-            logDeployment("🔄 Starting Git pull deployment by " . ($_SESSION['admin_email'] ?? 'admin'));
+        case 'download':
+            logDeployment("🔄 Starting GitHub download deployment by admin");
             
-            // Step 1: Check Git status
-            $status = executeGitCommand('git status --porcelain');
-            if (!empty(trim($status['output']))) {
-                logDeployment("⚠️ Warning: Uncommitted changes detected");
-                $response['message'] = "Warning: You have uncommitted local changes. ";
-            }
-
-            // Step 2: Fetch latest changes
-            logDeployment("📡 Fetching latest changes from remote...");
-            $fetch = executeGitCommand('git fetch origin');
-            if (!$fetch['success']) {
-                $response['message'] = "❌ Failed to fetch from remote: " . $fetch['output'];
-                logDeployment("❌ Fetch failed: " . $fetch['output']);
+            // GitHub repository details
+            $owner = 'jasonzli-DEV';
+            $repo = 'enderbit';
+            $branch = 'main';
+            $zipUrl = "https://github.com/{$owner}/{$repo}/archive/refs/heads/{$branch}.zip";
+            
+            // Download location
+            $tempZip = sys_get_temp_dir() . '/enderbit-update.zip';
+            $extractDir = sys_get_temp_dir() . '/enderbit-update';
+            
+            // Step 1: Download ZIP from GitHub
+            logDeployment("📡 Downloading from GitHub...");
+            $zipContent = @file_get_contents($zipUrl);
+            
+            if ($zipContent === false) {
+                $response['message'] = "❌ Failed to download from GitHub. Check your internet connection.";
+                logDeployment("❌ Download failed");
                 break;
             }
-            logDeployment("✅ Fetch successful");
-
-            // Step 3: Pull changes (try main branch first, fallback to master)
-            logDeployment("⬇️ Pulling changes...");
-            $pull = executeGitCommand('git pull origin main --no-rebase');
             
-            // If main doesn't exist, try master
-            if (!$pull['success'] && strpos($pull['output'], "couldn't find remote ref main") !== false) {
-                logDeployment("ℹ️ Main branch not found, trying master...");
-                $pull = executeGitCommand('git pull origin master --no-rebase');
+            file_put_contents($tempZip, $zipContent);
+            logDeployment("✅ Download successful (" . number_format(strlen($zipContent)) . " bytes)");
+            
+            // Step 2: Extract ZIP
+            logDeployment("📦 Extracting files...");
+            $zip = new ZipArchive;
+            
+            if ($zip->open($tempZip) !== TRUE) {
+                $response['message'] = "❌ Failed to extract ZIP file.";
+                logDeployment("❌ Extraction failed");
+                unlink($tempZip);
+                break;
             }
             
-            if ($pull['success']) {
-                $response['success'] = true;
-                
-                // Check if already up to date
-                if (strpos($pull['output'], 'Already up to date') !== false) {
-                    $response['message'] .= "ℹ️ Already up to date. No changes pulled.";
-                    logDeployment("ℹ️ No changes - already up to date");
-                } else {
-                    $response['message'] .= "✅ Successfully pulled latest changes!";
-                    logDeployment("✅ Pull successful");
-                }
-                
-                $response['log'] = $pull['output'];
-            } else {
-                // Check if it's a merge conflict
-                if (strpos($pull['output'], 'CONFLICT') !== false) {
-                    $response['message'] = "⚠️ Merge conflict detected. Please resolve manually via terminal.";
-                    logDeployment("❌ Merge conflict: " . $pull['output']);
-                } else {
-                    $response['message'] = "❌ Pull failed: " . $pull['output'];
-                    logDeployment("❌ Pull failed: " . $pull['output']);
-                }
-                $response['log'] = $pull['output'];
+            // Remove old extraction directory if exists
+            if (is_dir($extractDir)) {
+                deleteDirectory($extractDir);
             }
-            break;
-
-        case 'status':
-            logDeployment("📊 Checking Git status");
             
-            // Get current branch
-            $branch = executeGitCommand('git rev-parse --abbrev-ref HEAD');
+            mkdir($extractDir, 0755, true);
+            $zip->extractTo($extractDir);
+            $zip->close();
+            logDeployment("✅ Extraction successful");
             
-            // Get status
-            $status = executeGitCommand('git status');
+            // Step 3: Copy files (skip config.php and JSON files)
+            logDeployment("📋 Copying files...");
+            $sourceDir = $extractDir . "/{$repo}-{$branch}/httpdocs";
+            $targetDir = __DIR__;
             
-            // Get last commit
-            $lastCommit = executeGitCommand('git log -1 --pretty=format:"%h - %s (%cr by %an)"');
+            if (!is_dir($sourceDir)) {
+                $response['message'] = "❌ Source directory not found in downloaded files.";
+                logDeployment("❌ Source directory not found: " . $sourceDir);
+                break;
+            }
             
-            // Check if behind remote
-            executeGitCommand('git fetch origin');
-            $behind = executeGitCommand('git rev-list HEAD..origin/' . trim($branch['output']) . ' --count');
+            $updatedFiles = [];
+            $skippedFiles = ['config.php', 'tokens.json', 'tickets.json', 'settings.json', 'deployment.log'];
+            
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+            
+            foreach ($files as $file) {
+                $relativePath = str_replace($sourceDir . '/', '', $file->getPathname());
+                $targetPath = $targetDir . '/' . $relativePath;
+                
+                // Skip protected files
+                if (in_array(basename($file), $skippedFiles)) {
+                    continue;
+                }
+                
+                if ($file->isDir()) {
+                    if (!is_dir($targetPath)) {
+                        mkdir($targetPath, 0755, true);
+                    }
+                } else {
+                    copy($file->getPathname(), $targetPath);
+                    $updatedFiles[] = $relativePath;
+                }
+            }
+            
+            // Step 4: Cleanup
+            unlink($tempZip);
+            deleteDirectory($extractDir);
             
             $response['success'] = true;
-            $response['message'] = "📊 Git Status Retrieved";
-            $response['log'] = "Current Branch: " . trim($branch['output']) . "\n" .
-                              "Last Commit: " . trim($lastCommit['output']) . "\n" .
-                              "Behind Remote: " . trim($behind['output']) . " commit(s)\n\n" .
-                              $status['output'];
-            logDeployment("✅ Status check completed");
+            $response['message'] = "✅ Successfully updated " . count($updatedFiles) . " files!";
+            $response['log'] = "Updated files:\n" . implode("\n", array_slice($updatedFiles, 0, 50));
+            if (count($updatedFiles) > 50) {
+                $response['log'] .= "\n... and " . (count($updatedFiles) - 50) . " more files";
+            }
+            
+            logDeployment("✅ Update successful - " . count($updatedFiles) . " files updated");
+            logDeployment("Protected files preserved: " . implode(', ', $skippedFiles));
+            break;
+
+        case 'check':
+            logDeployment("📊 Checking for updates");
+            
+            // Get latest commit info from GitHub API
+            $owner = 'jasonzli-DEV';
+            $repo = 'enderbit';
+            $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/main";
+            
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: EnderBit-Updater\r\n"
+                ]
+            ]);
+            
+            $commitData = @file_get_contents($apiUrl, false, $context);
+            
+            if ($commitData === false) {
+                $response['message'] = "❌ Failed to check GitHub for updates.";
+                break;
+            }
+            
+            $commit = json_decode($commitData, true);
+            
+            $response['success'] = true;
+            $response['message'] = "📊 Latest Commit Info";
+            $response['log'] = "Commit: " . substr($commit['sha'], 0, 7) . "\n" .
+                              "Author: " . $commit['commit']['author']['name'] . "\n" .
+                              "Date: " . date('Y-m-d H:i:s', strtotime($commit['commit']['author']['date'])) . "\n" .
+                              "Message: " . $commit['commit']['message'];
+            
+            logDeployment("✅ Check completed");
             break;
 
         case 'log':
@@ -129,7 +164,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $response['message'] = "📜 Deployment Log";
             
             if (file_exists($logFile)) {
-                // Get last 50 lines
                 $lines = file($logFile);
                 $lastLines = array_slice($lines, -50);
                 $response['log'] = implode('', $lastLines);
@@ -144,6 +178,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     echo json_encode($response);
     exit;
+}
+
+// Helper function to delete directory recursively
+function deleteDirectory($dir) {
+    if (!is_dir($dir)) return;
+    
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    
+    foreach ($files as $fileinfo) {
+        if ($fileinfo->isDir()) {
+            rmdir($fileinfo->getRealPath());
+        } else {
+            unlink($fileinfo->getRealPath());
+        }
+    }
+    
+    rmdir($dir);
 }
 ?>
 <!DOCTYPE html>
@@ -321,12 +375,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     color:var(--red);
   }
 
-  .status-message.warning {
-    background:rgba(240,136,62,0.1);
-    border:1px solid #f0883e;
-    color:#f0883e;
-  }
-
   .spinner {
     border:3px solid var(--input-border);
     border-top:3px solid var(--accent);
@@ -371,25 +419,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     </div>
 
     <div class="info-box">
-      <h3>ℹ️ Before You Start</h3>
+      <h3>ℹ️ Simple GitHub Updater</h3>
       <ul>
-        <li>Make sure Git is configured on your server</li>
-        <li>Ensure SSH keys or credentials are set up for remote access</li>
-        <li>Backup important data before pulling changes</li>
-        <li>Check deployment logs for any issues</li>
+        <li>Downloads latest code directly from GitHub</li>
+        <li>No Git installation required on server</li>
+        <li>Protects your config.php and data files</li>
+        <li>Safe and easy to use</li>
       </ul>
     </div>
 
     <div class="card">
       <h2>🚀 Deployment Actions</h2>
       <div class="action-buttons">
-        <button class="btn btn-primary" onclick="pullChanges()" id="pullBtn">
-          <span>⬇️ Pull Latest Changes</span>
-          <div class="spinner" id="pullSpinner"></div>
+        <button class="btn btn-primary" onclick="downloadUpdate()" id="downloadBtn">
+          <span>⬇️ Download & Install Update</span>
+          <div class="spinner" id="downloadSpinner"></div>
         </button>
-        <button class="btn btn-secondary" onclick="checkStatus()" id="statusBtn">
-          <span>📊 Check Git Status</span>
-          <div class="spinner" id="statusSpinner"></div>
+        <button class="btn btn-secondary" onclick="checkUpdates()" id="checkBtn">
+          <span>🔍 Check for Updates</span>
+          <div class="spinner" id="checkSpinner"></div>
         </button>
         <button class="btn btn-secondary" onclick="viewLog()" id="logBtn">
           📜 View Deployment Log
@@ -404,14 +452,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   <script>
     async function executeAction(action, btnId, spinnerId) {
       const btn = document.getElementById(btnId);
-      const spinner = document.getElementById(spinnerId);
+      const spinner = spinnerId ? document.getElementById(spinnerId) : null;
       const statusMsg = document.getElementById('statusMessage');
       const outputBox = document.getElementById('outputBox');
 
-      // Disable button and show spinner
       btn.disabled = true;
       if (spinner) spinner.style.display = 'inline-block';
-      statusMsg.classList.remove('show', 'success', 'error', 'warning');
+      statusMsg.classList.remove('show', 'success', 'error');
       outputBox.classList.remove('show');
 
       try {
@@ -423,17 +470,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         const data = await response.json();
 
-        // Show status message
         statusMsg.textContent = data.message;
         statusMsg.classList.add('show');
-        
-        if (data.success) {
-          statusMsg.classList.add('success');
-        } else {
-          statusMsg.classList.add('error');
-        }
+        statusMsg.classList.add(data.success ? 'success' : 'error');
 
-        // Show output log if available
         if (data.log) {
           outputBox.textContent = data.log;
           outputBox.classList.add('show');
@@ -448,14 +488,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
       }
     }
 
-    function pullChanges() {
-      if (confirm('⚠️ This will pull the latest changes from Git. Continue?')) {
-        executeAction('pull', 'pullBtn', 'pullSpinner');
+    function downloadUpdate() {
+      if (confirm('⚠️ This will download and install updates from GitHub.\n\nYour config.php and data files will be preserved.\n\nContinue?')) {
+        executeAction('download', 'downloadBtn', 'downloadSpinner');
       }
     }
 
-    function checkStatus() {
-      executeAction('status', 'statusBtn', 'statusSpinner');
+    function checkUpdates() {
+      executeAction('check', 'checkBtn', 'checkSpinner');
     }
 
     function viewLog() {
