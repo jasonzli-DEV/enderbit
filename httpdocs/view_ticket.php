@@ -146,10 +146,9 @@ function format_user_time($datetime, $timezone) {
     display:block;
   }
   nav .nav-links .dropdown > a {
-    display:flex;
+    display:inline-flex;
     align-items:center;
     gap:4px;
-    padding-bottom:8px;
   }
 
   /* Theme Toggle */
@@ -161,6 +160,11 @@ function format_user_time($datetime, $timezone) {
     font-size:14px;
     cursor:pointer;
     color:var(--text);
+    vertical-align:middle;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
   }
 
   /* Container */

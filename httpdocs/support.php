@@ -96,10 +96,9 @@ require_once __DIR__ . '/config.php';
     display:block;
   }
   nav .nav-links .dropdown > a {
-    display:flex;
+    display:inline-flex;
     align-items:center;
     gap:4px;
-    padding-bottom:8px;
   }
   nav .nav-links a.active { color:var(--accent); border-bottom:2px solid var(--accent); }
 
@@ -304,6 +303,11 @@ require_once __DIR__ . '/config.php';
     font-size:14px;
     cursor:pointer;
     color:var(--text);
+    vertical-align:middle;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
   }
 
   @media (max-width: 768px) {

@@ -211,10 +211,9 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     display:block;
   }
   nav .nav-links .dropdown > a {
-    display:flex;
+    display:inline-flex;
     align-items:center;
     gap:4px;
-    padding-bottom:8px;
   }
   nav .nav-links a.active {
     color:var(--accent);
@@ -231,6 +230,11 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     font-size:14px;
     cursor:pointer;
     color:var(--text);
+    vertical-align:middle;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
   }
 
   /* Footer */
