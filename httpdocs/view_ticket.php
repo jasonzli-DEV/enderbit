@@ -31,7 +31,9 @@ foreach ($tickets as $t) {
 }
 
 if (!$ticket) {
-    header("Location: support.php?msg=" . urlencode("Ticket not found") . "&type=error");
+    header("Location: support.php?msg="             <option value="server_restart">🔄 Server Restart Instructions</option>
+            <option value="get_server">💻 Get a Server</option>
+            <option value="account_verified">✓ Account Verified</option>rlencode("Ticket not found") . "&type=error");
     exit;
 }
 
@@ -706,7 +708,7 @@ function format_user_time($datetime, $timezone) {
           <?php foreach ($allNotes as $note): ?>
             <div class="internal-note">
               <div class="note-header">
-                <span class="note-author">🔒 Ticket: <?= htmlspecialchars($note['ticket_id'] ?? 'Unknown') ?></span>
+                <span class="note-author">🔒 <?= htmlspecialchars($note['ticket_id'] ?? 'Unknown') ?></span>
                 <span class="note-time"><?= htmlspecialchars(format_user_time($note['created_at'], $displayTimezone)) ?></span>
               </div>
               <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
