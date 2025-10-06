@@ -649,9 +649,9 @@ const cannedResponses = {
   resolved: "Hello,\n\nGreat news! We've successfully resolved the issue you reported.\n\nEverything should now be working as expected. If you experience any further problems or have additional questions, please don't hesitate to reach out.\n\nThank you for your patience!\n\nBest regards,\nEnderBit Support Team",
   
   server_restart: "Hello,\n\nTo resolve this issue, please try restarting your server:\n\n1. Log into your game panel\n2. Navigate to your server\n3. Click the 'Restart' button\n4. Wait 2-3 minutes for the server to fully restart\n\nIf the issue persists after restarting, please let us know and we'll investigate further.\n\nBest regards,\nEnderBit Support Team",
-  
-  billing_info: "Hello,\n\nRegarding your billing inquiry:\n\nYour current plan: [Plan Name]\nBilling cycle: [Monthly/Yearly]\nNext billing date: [Date]\n\nIf you have any questions about your billing or would like to make changes to your plan, please let us know.\n\nBest regards,\nEnderBit Support Team",
-  
+
+  server_info: "Hello,\n\nRegarding your server inquiry:\n\nYour current plan: [Plan Name]If you have any questions about your server or would like to make changes to your plan, please let us know.\n\nBest regards,\nEnderBit Support Team",
+
   account_verified: "Hello,\n\nGood news! Your account has been successfully verified and approved.\n\nYou can now log in to your panel and start using our services:\n<?= htmlspecialchars($config['ptero_url'] ?? 'https://panel.enderbit.com') ?>\n\nIf you need any assistance getting started, feel free to reach out!\n\nWelcome to EnderBit!\n\nBest regards,\nEnderBit Support Team",
   
   feature_request: "Hello,\n\nThank you for your feature request! We really appreciate your feedback.\n\nWe've added your suggestion to our feature request list and our development team will review it. While we can't guarantee implementation, we carefully consider all user feedback.\n\nWe'll keep you updated if this feature is added in the future.\n\nThank you for helping us improve!\n\nBest regards,\nEnderBit Support Team",
