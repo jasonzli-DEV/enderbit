@@ -752,7 +752,7 @@ function format_user_time($datetime, $timezone) {
             <option value="need_more_info">ℹ️ Need More Information</option>
             <option value="resolved">✅ Issue Resolved</option>
             <option value="server_restart">🔄 Server Restart Instructions</option>
-            <option value="get_server">�️ Get a Server</option>
+            <option value="get_server">🖥️ Get a Server</option>
             <option value="account_verified">✓ Account Verified</option>
             <option value="feature_request">✨ Feature Request Response</option>
             <option value="apologize">🙏 Apologize for Inconvenience</option>

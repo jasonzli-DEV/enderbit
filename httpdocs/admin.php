@@ -375,10 +375,20 @@ if (isset($_POST['approve_user'])) {
                                 'billing' => '💳',
                                 'account' => '👤',
                                 'feature' => '✨',
+                                'get_server' => '🖥️',
                                 'other' => '❓'
                               ];
+                              $categoryNames = [
+                                'technical' => 'Technical',
+                                'billing' => 'Billing',
+                                'account' => 'Account',
+                                'feature' => 'Feature Request',
+                                'get_server' => 'Get a Server',
+                                'other' => 'Other'
+                              ];
                               $icon = $categoryIcons[$ticket['category']] ?? '📋';
-                              echo $icon . ' <strong>' . htmlspecialchars(ucfirst($ticket['category'])) . '</strong> | ';
+                              $categoryName = $categoryNames[$ticket['category']] ?? ucfirst($ticket['category']);
+                              echo $icon . ' <strong>' . htmlspecialchars($categoryName) . '</strong> | ';
                               ?>
                             <?php endif; ?>
                             <?php if (!empty($ticket['priority'])): ?>
