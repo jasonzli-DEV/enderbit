@@ -1,0 +1,110 @@
+/* Global Reset */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #0d0d0d, #101a2d);
+    color: #fff;
+}
+
+/* Center container */
+.container {
+    max-width: 450px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+/* Branding */
+.branding {
+    font-size: 2.2rem;
+    color: #4da3ff;
+    margin-bottom: 5px;
+}
+.subtitle {
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+/* Cards */
+.card {
+    background: #1a1a1a;
+    padding: 25px;
+    margin: 20px 0;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.card h2 {
+    margin-bottom: 15px;
+    color: #4da3ff;
+}
+
+/* Inputs */
+input[type="text"], input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 14px;
+}
+input::placeholder {
+    color: #aaa;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    background: #4da3ff;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 10px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    width: 100%;
+}
+.btn:hover {
+    background: #1e6fd9;
+}
+
+/* ✅ Banner (slide-in left, close button) */
+.banner {
+    position: relative;
+    padding: 14px 18px;
+    margin: 15px auto;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 15px;
+    width: 90%;
+    max-width: 450px;
+    animation: slideIn 0.5s ease-out;
+    text-align: left;
+}
+.banner.success {
+    background-color: #28a745;
+    color: #fff;
+}
+.banner.error {
+    background-color: #dc3545;
+    color: #fff;
+}
+.close-btn {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #000; /* black close button */
+}
+
+/* Slide in animation */
+@keyframes slideIn {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
