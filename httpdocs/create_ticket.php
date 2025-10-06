@@ -167,7 +167,7 @@ try {
     $fromName = $config['support_smtp']['from_name'];
     $smtp = $config['support_smtp'];
     
-    if ($smtp['enabled']) {
+    if (!empty($smtp['host']) && !empty($smtp['port'])) {
         $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
         
         if ($socket) {
