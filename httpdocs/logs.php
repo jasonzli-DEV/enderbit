@@ -11,9 +11,9 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 // Get log file path from query or default to PHP error log
 $logType = $_GET['type'] ?? 'php';
 $logFiles = [
-    'php' => ini_get('error_log') ?: '/var/log/php_errors.log',
-    'apache' => '/var/log/apache2/error.log',
-    'nginx' => '/var/log/nginx/error.log',
+    'php' => __DIR__ . '/php_errors.log',
+    'apache' => __DIR__ . '/apache_errors.log',
+    'nginx' => __DIR__ . '/nginx_errors.log',
     'custom' => __DIR__ . '/custom.log'
 ];
 

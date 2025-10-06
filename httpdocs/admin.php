@@ -290,6 +290,7 @@ if (isset($_POST['approve_user'])) {
           <?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
         </a>
         <button type="submit" name="save_exit" class="btn btn-primary">Save and Exit</button>
+        <button type="submit" name="logout" class="btn btn-danger" style="margin-top:10px;">Logout</button>
       </form>
 
       <div class="section-header">
