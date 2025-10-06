@@ -63,6 +63,42 @@ require_once __DIR__ . '/config.php';
     transition:color .2s;
   }
   nav .nav-links a:hover { color:var(--accent); }
+  nav .nav-links .dropdown {
+    position:relative;
+    display:inline-block;
+  }
+  nav .nav-links .dropdown-content {
+    display:none;
+    position:absolute;
+    top:100%;
+    left:0;
+    background:var(--card);
+    min-width:180px;
+    box-shadow:0 8px 16px rgba(0,0,0,.4);
+    border:1px solid var(--input-border);
+    border-radius:8px;
+    margin-top:8px;
+    z-index:1000;
+  }
+  nav .nav-links .dropdown-content a {
+    display:block;
+    padding:12px 20px;
+    text-decoration:none;
+    color:var(--text);
+    transition:background .2s;
+  }
+  nav .nav-links .dropdown-content a:hover {
+    background:var(--input-bg);
+    color:var(--accent);
+  }
+  nav .nav-links .dropdown:hover .dropdown-content {
+    display:block;
+  }
+  nav .nav-links .dropdown > a {
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
 
   .theme-toggle {
     background:var(--card);
@@ -290,7 +326,13 @@ require_once __DIR__ . '/config.php';
         <a href="/services.php">Services</a>
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
-        <a href="/support.php">Support</a>
+        <div class="dropdown">
+          <a href="#">Support ▼</a>
+          <div class="dropdown-content">
+            <a href="/support.php">🎫 Submit Ticket</a>
+            <a href="/faq.php">📚 Knowledge Base</a>
+          </div>
+        </div>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>
@@ -319,13 +361,6 @@ require_once __DIR__ . '/config.php';
         <div class="category-title">Troubleshooting</div>
         <div class="category-desc">Common issues and how to fix them. Get your server back online fast.</div>
         <div class="article-count">6 articles</div>
-      </div>
-
-      <div class="category-card" onclick="scrollToSection('billing')">
-        <div class="category-icon">💳</div>
-        <div class="category-title">Billing & Plans</div>
-        <div class="category-desc">Information about pricing, payments, upgrades, and cancellations.</div>
-        <div class="article-count">4 articles</div>
       </div>
 
       <div class="category-card" onclick="scrollToSection('advanced')">
@@ -547,69 +582,6 @@ require_once __DIR__ . '/config.php';
           <li>Remove memory-intensive mods</li>
           <li>Consider upgrading your plan for more RAM</li>
         </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="faq-section" id="billing">
-    <h2>💳 Billing & Plans</h2>
-    
-    <div class="faq-item" data-keywords="payment method credit card paypal">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>What payment methods do you accept?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>We accept the following payment methods:</p>
-        <ul>
-          <li>Credit/Debit Cards (Visa, MasterCard, American Express)</li>
-          <li>PayPal</li>
-          <li>Cryptocurrency (Bitcoin, Ethereum)</li>
-          <li>Bank Transfer (for annual plans)</li>
-        </ul>
-        <p>All payments are processed securely through our payment providers.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" data-keywords="upgrade downgrade plan change">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>Can I upgrade or downgrade my plan?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>Yes! You can change your plan anytime:</p>
-        <p><strong>Upgrading:</strong> Immediate upgrade with prorated billing. You only pay the difference.</p>
-        <p><strong>Downgrading:</strong> Takes effect at the end of your current billing period. Credit applied to next invoice.</p>
-        <p>To change plans, log into your panel and go to <strong>Billing → Manage Plan</strong>.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" data-keywords="refund money back guarantee cancel">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>Do you offer refunds?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>We offer a <strong>7-day money-back guarantee</strong> for new customers.</p>
-        <p>If you're not satisfied within the first 7 days, contact support for a full refund.</p>
-        <p>After 7 days, refunds are handled case-by-case based on service issues.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" data-keywords="cancel subscription stop service">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>How do I cancel my subscription?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>To cancel your subscription:</p>
-        <ol>
-          <li>Log into your panel</li>
-          <li>Go to <strong>Billing</strong></li>
-          <li>Click <strong>Cancel Subscription</strong></li>
-          <li>Confirm cancellation</li>
-        </ol>
-        <p>Your server will remain active until the end of your current billing period. Make sure to download any backups before your service ends!</p>
       </div>
     </div>
   </div>

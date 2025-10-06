@@ -12,19 +12,8 @@ if (empty($ticketId)) {
 $ticketsFile = __DIR__ . '/tickets.json';
 if (!file_exists($ticketsFile)) {
     header("Location: support.php?msg=" . urlencode("Ticket not found") . "&type=error");
-    ex  <div class="page-container">
-    <?php if ($justCreated): ?>
-    <div class="success-banner">
-      <h2>✅ Ticket Created Successfully!</h2>
-      <p>Your ticket has been submitted and our support team will respond soon.</p>
-      <p>A confirmation email has been sent to <strong><?= htmlspecialchars($ticket['email']) ?></strong></p>
-      <p style="margin-top:8px;">💬 Check this page or your email for updates on your ticket.</p>
-    </div>
-    <?php endif; ?>>✅ Ticket Created Successfully!</h2>
-      <p>Your ticket has been submitted and our support team will respond soon.</p>
-      <p>A confirmation email has been sent to <strong><?= htmlspecialchars($ticket['email']) ?></strong></p>
-      <p style="margin-top:8px;">💬 Check this page or your email for updates on your ticket.</p>
-    </div>
+    exit;
+}
 
 $tickets = json_decode(file_get_contents($ticketsFile), true);
 if (!is_array($tickets)) {
@@ -109,6 +98,42 @@ $justCreated = isset($_GET['created']);
     transition:color .2s;
   }
   nav .nav-links a:hover { color:var(--accent); }
+  nav .nav-links .dropdown {
+    position:relative;
+    display:inline-block;
+  }
+  nav .nav-links .dropdown-content {
+    display:none;
+    position:absolute;
+    top:100%;
+    left:0;
+    background:var(--card);
+    min-width:180px;
+    box-shadow:0 8px 16px rgba(0,0,0,.4);
+    border:1px solid var(--input-border);
+    border-radius:8px;
+    margin-top:8px;
+    z-index:1000;
+  }
+  nav .nav-links .dropdown-content a {
+    display:block;
+    padding:12px 20px;
+    text-decoration:none;
+    color:var(--text);
+    transition:background .2s;
+  }
+  nav .nav-links .dropdown-content a:hover {
+    background:var(--input-bg);
+    color:var(--accent);
+  }
+  nav .nav-links .dropdown:hover .dropdown-content {
+    display:block;
+  }
+  nav .nav-links .dropdown > a {
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
 
   /* Theme Toggle */
   .theme-toggle {
@@ -492,8 +517,13 @@ $justCreated = isset($_GET['created']);
         <a href="/services.php">Services</a>
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
-        <a href="/support.php">Support</a>
-        <a href="/faq.php">FAQ</a>
+        <div class="dropdown">
+          <a href="#">Support ▼</a>
+          <div class="dropdown-content">
+            <a href="/support.php">🎫 Submit Ticket</a>
+            <a href="/faq.php">📚 Knowledge Base</a>
+          </div>
+        </div>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>
