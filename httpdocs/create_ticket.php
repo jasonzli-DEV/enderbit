@@ -174,9 +174,14 @@ function sendEmail($to, $subject, $body, $config) {
     // Try SMTP first
     $smtp = $config['support_smtp'];
     if (!empty($smtp['host']) && !empty($smtp['port'])) {
-        $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
+        // Handle SSL connection for port 465
+        $host = ($smtp['port'] == 465 && $smtp['secure'] === 'ssl') ? 'ssl://' . $smtp['host'] : $smtp['host'];
+        $socket = @fsockopen($host, $smtp['port'], $errno, $errstr, 5); // Reduced timeout to 5 seconds
         
         if ($socket) {
+            // Set socket timeout to prevent hanging
+            stream_set_timeout($socket, 10);
+            
             $response = fgets($socket);
             fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
             $response = fgets($socket);
