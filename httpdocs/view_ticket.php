@@ -188,6 +188,17 @@ $justCreated = isset($_GET['created']);
   }
   .status-open { background:rgba(35,134,54,.2); color:var(--green); }
   .status-closed { background:rgba(139,148,158,.2); color:var(--muted); }
+  
+  .category-badge {
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    background:rgba(88,166,255,.15);
+    color:var(--accent);
+    border:1px solid var(--accent);
+  }
 
   /* Messages */
   .messages {
@@ -387,6 +398,22 @@ $justCreated = isset($_GET['created']);
             <span>🎫</span>
             <strong><?= htmlspecialchars($ticket['id']) ?></strong>
           </div>
+          <?php if (!empty($ticket['category'])): ?>
+          <div class="ticket-meta-item">
+            <span class="category-badge">
+              <?php
+              $categoryIcons = [
+                'technical' => '💻 Technical Support',
+                'billing' => '💳 Billing',
+                'account' => '👤 Account',
+                'feature' => '✨ Feature Request',
+                'other' => '❓ Other'
+              ];
+              echo htmlspecialchars($categoryIcons[$ticket['category']] ?? ucfirst($ticket['category']));
+              ?>
+            </span>
+          </div>
+          <?php endif; ?>
           <div class="ticket-meta-item">
             <span>📧</span>
             <span><?= htmlspecialchars($ticket['email']) ?></span>

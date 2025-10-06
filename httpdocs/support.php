@@ -308,6 +308,18 @@ require_once __DIR__ . '/config.php';
         </div>
 
         <div class="form-group">
+          <label for="category">Category *</label>
+          <select id="category" name="category" required style="width:100%;padding:14px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:15px;">
+            <option value="">Select a category...</option>
+            <option value="technical">💻 Technical Support</option>
+            <option value="billing">💳 Billing & Payment</option>
+            <option value="account">👤 Account Issues</option>
+            <option value="feature">✨ Feature Request</option>
+            <option value="other">❓ Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="subject">Subject *</label>
           <input type="text" id="subject" name="subject" required placeholder="Brief description of your issue">
         </div>

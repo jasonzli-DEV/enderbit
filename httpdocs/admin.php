@@ -2,6 +2,33 @@
 session_start();
 require_once __DIR__ . '/config.php';
 
+// Function to check if updates are available
+function checkForUpdates() {
+    $versionFile = __DIR__ . '/version.json';
+    $currentVersion = 'unknown';
+    
+    if (file_exists($versionFile)) {
+        $versionData = json_decode(file_get_contents($versionFile), true);
+        $currentVersion = $versionData['version'] ?? 'unknown';
+    }
+    
+    $apiUrl = "https://api.github.com/repos/jasonzli-DEV/enderbit/commits/main";
+    $context = stream_context_create([
+        'http' => [
+            'header' => "User-Agent: EnderBit-Updater\r\n",
+            'timeout' => 3
+        ]
+    ]);
+    
+    $commitData = @file_get_contents($apiUrl, false, $context);
+    if ($commitData === false) return false;
+    
+    $commit = json_decode($commitData, true);
+    $latestVersion = substr($commit['sha'], 0, 7);
+    
+    return ($currentVersion !== $latestVersion && $currentVersion !== 'unknown');
+}
+
 $settingsFile = __DIR__ . '/settings.json';
 if (!file_exists($settingsFile)) {
     file_put_contents($settingsFile, json_encode([
@@ -118,12 +145,20 @@ if (isset($_POST['approve_user'])) {
   .reply-item{background:#0e1418;padding:12px;border-radius:8px;margin:10px 0;border-left:3px solid #f0883e;}
   .reply-meta{font-size:12px;color:var(--muted);margin-bottom:6px;}
   .reply-form textarea{width:100%;padding:12px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;margin-top:10px;}
-  .status-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;}
-  .status-open{background:rgba(35,134,54,.2);color:var(--green);}
-  .status-closed{background:rgba(139,148,158,.2);color:var(--muted);}
+  .status-badge{display:inline-block;padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;border:2px solid;}
+  .status-open{background:rgba(34,197,94,.15);color:#22c55e;border-color:#22c55e;}
+  .status-closed{background:rgba(239,68,68,.15);color:#ef4444;border-color:#ef4444;}
   .btn-small{padding:8px 16px;font-size:13px;}
   .view-ticket-btn{display:inline-block;padding:8px 16px;background:var(--accent);color:#fff;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;margin-top:10px;}
   .view-ticket-btn:hover{opacity:.9;}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:20px 0;}
+  .stat-card{background:var(--input-bg);border:1px solid var(--input-border);border-radius:10px;padding:20px;text-align:center;}
+  .stat-value{font-size:32px;font-weight:700;color:var(--accent);margin:8px 0;}
+  .stat-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .update-badge{background:#ef4444;color:#fff;font-size:10px;padding:3px 8px;border-radius:10px;margin-left:8px;font-weight:700;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  .section-header{display:flex;justify-content:space-between;align-items:center;margin:30px 0 15px;}
+  .section-header h2{margin:0;}
 </style>
 </head>
 <body>
@@ -145,16 +180,71 @@ if (isset($_POST['approve_user'])) {
         </p>
       <?php endif; ?>
 
+      <!-- Dashboard Statistics -->
+      <?php
+      $tokensFile = __DIR__ . '/tokens.json';
+      $ticketsFile = __DIR__ . '/tickets.json';
+      
+      $totalUsers = 0;
+      $pendingUsers = 0;
+      if (file_exists($tokensFile)) {
+          $tokens = json_decode(file_get_contents($tokensFile), true);
+          if (is_array($tokens)) {
+              $pendingUsers = count($tokens);
+          }
+      }
+      
+      $totalTickets = 0;
+      $openTickets = 0;
+      $closedTickets = 0;
+      if (file_exists($ticketsFile)) {
+          $tickets = json_decode(file_get_contents($ticketsFile), true);
+          if (is_array($tickets)) {
+              $totalTickets = count($tickets);
+              foreach ($tickets as $ticket) {
+                  if ($ticket['status'] === 'open') $openTickets++;
+                  if ($ticket['status'] === 'closed') $closedTickets++;
+              }
+          }
+      }
+      
+      $hasUpdate = checkForUpdates();
+      ?>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">📊 Total Tickets</div>
+          <div class="stat-value"><?= $totalTickets ?></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🟢 Open Tickets</div>
+          <div class="stat-value" style="color:#22c55e;"><?= $openTickets ?></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🔴 Closed Tickets</div>
+          <div class="stat-value" style="color:#ef4444;"><?= $closedTickets ?></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">👥 Pending Users</div>
+          <div class="stat-value" style="color:#f59e0b;"><?= $pendingUsers ?></div>
+        </div>
+      </div>
+
       <form method="post">
         <label><input type="checkbox" name="require_email_verify" <?= !empty($settings['require_email_verify']) ? 'checked':'' ?>> Require Email Verification</label>
         <label><input type="checkbox" name="require_admin_approve" <?= !empty($settings['require_admin_approve']) ? 'checked':'' ?>> Require Admin Approval</label>
 
-        <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">🔄 Pull Latest Updates</a>
+        <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">
+          🔄 Pull Latest Updates
+          <?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
+        </a>
         <button type="submit" name="save_exit" class="btn btn-primary">Save and Exit</button>
         <button type="submit" name="logout" class="btn btn-danger">Logout</button>
       </form>
 
-      <h2>Pending Users</h2>
+      <div class="section-header">
+        <h2>👥 Pending Users</h2>
+      </div>
       <table>
         <tr><th>Email</th><th>Status</th><th>Action</th></tr>
         <?php
@@ -180,7 +270,10 @@ if (isset($_POST['approve_user'])) {
 
       <!-- Support Tickets Section -->
       <div class="ticket-section">
-        <h2>Support Tickets</h2>
+        <div class="section-header">
+          <h2>🎫 Support Tickets</h2>
+          <span style="font-size:13px;color:var(--muted);">Sorted by newest first</span>
+        </div>
         <?php
         $ticketsFile = __DIR__ . '/tickets.json';
         if (file_exists($ticketsFile)) {
@@ -201,6 +294,19 @@ if (isset($_POST['approve_user'])) {
                           <div class="ticket-title">🎫 <?= htmlspecialchars($ticket['subject']) ?></div>
                           <div class="ticket-meta">
                             ID: <strong><?= $ticketId ?></strong> | 
+                            <?php if (!empty($ticket['category'])): ?>
+                              <?php
+                              $categoryIcons = [
+                                'technical' => '💻',
+                                'billing' => '💳',
+                                'account' => '👤',
+                                'feature' => '✨',
+                                'other' => '❓'
+                              ];
+                              $icon = $categoryIcons[$ticket['category']] ?? '📋';
+                              echo $icon . ' <strong>' . htmlspecialchars(ucfirst($ticket['category'])) . '</strong> | ';
+                              ?>
+                            <?php endif; ?>
                             From: <strong><?= htmlspecialchars($ticket['email']) ?></strong> | 
                             Created: <?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?> | 
                             <?php if ($replyCount > 0): ?>💬 <strong><?= $replyCount ?></strong> replies<?php endif; ?>

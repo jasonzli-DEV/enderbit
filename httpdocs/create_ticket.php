@@ -7,15 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$email = trim($_POST['email'] ?? '');
-$subject = trim($_POST['subject'] ?? '');
-$description = trim($_POST['description'] ?? '');
-
-// Validate input
-if (empty($email) || empty($subject) || empty($description)) {
-    header("Location: support.php?msg=" . urlencode("All fields are required") . "&type=error");
-    exit;
-}
+$email = trim($_POST['email'] ?? '');\n$category = trim($_POST['category'] ?? 'other');\n$subject = trim($_POST['subject'] ?? '');\n$description = trim($_POST['description'] ?? '');\n\n// Validate input\nif (empty($email) || empty($subject) || empty($description) || empty($category)) {\n    header("Location: support.php?msg=" . urlencode("All fields are required") . "&type=error");\n    exit;\n}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     header("Location: support.php?msg=" . urlencode("Invalid email address") . "&type=error");
@@ -37,15 +29,7 @@ if (!is_array($tickets)) {
 $ticketId = 'TICKET-' . strtoupper(bin2hex(random_bytes(4)));
 
 // Create new ticket
-$newTicket = [
-    'id' => $ticketId,
-    'email' => $email,
-    'subject' => $subject,
-    'description' => $description,
-    'status' => 'open',
-    'created_at' => date('Y-m-d H:i:s'),
-    'replies' => []
-];
+// Create new ticket\n$newTicket = [\n    'id' => $ticketId,\n    'email' => $email,\n    'category' => $category,\n    'subject' => $subject,\n    'description' => $description,\n    'status' => 'open',\n    'created_at' => date('Y-m-d H:i:s'),\n    'replies' => []\n];
 
 $tickets[] = $newTicket;
 
