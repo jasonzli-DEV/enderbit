@@ -221,13 +221,6 @@ if (isset($_POST['approve_user'])) {
     <?php else: ?>
       <h1>Admin Panel</h1>
 
-      <div style="margin-bottom:20px;">
-        <a href="logs.php" class="btn btn-primary" style="background:var(--yellow);display:inline-block;padding:10px 20px;border-radius:8px;text-decoration:none;color:#fff;font-weight:600;">📋 View System Logs</a>
-        <form method="post" style="display:inline;">
-          <button type="submit" name="logout" class="btn btn-secondary" style="margin-left:8px;">Logout</button>
-        </form>
-      </div>
-
       <!-- Dashboard Statistics -->
       <?php
       $tokensFile = __DIR__ . '/tokens.json';

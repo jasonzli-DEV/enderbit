@@ -1,6 +1,12 @@
 <?php
 session_start();
-require_once __DIR__ . '/config.php';
+require_once __DIR__   .card {
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+    background:var(--card);
+    border-radius:18px;
+    padding:36px;nfig.php';
 
 // ensure settings exist so reCAPTCHA key is available
 $settingsFile = __DIR__ . '/settings.json';
@@ -39,10 +45,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     background:linear-gradient(180deg,var(--bg),var(--bg-gradient));color:var(--text);}
   .page {
     min-height:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:28px;
+    padding:28px 28px 80px 28px;
     box-sizing:border-box;
   }
   .card {

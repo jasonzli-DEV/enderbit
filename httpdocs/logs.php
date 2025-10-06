@@ -21,10 +21,24 @@ $logFile = $logFiles[$logType] ?? $logFiles['php'];
 $lines = (int)($_GET['lines'] ?? 200);
 $search = $_GET['search'] ?? '';
 
+// Create log file if it doesn't exist
+if (!file_exists($logFile)) {
+    @touch($logFile);
+    @chmod($logFile, 0666);
+}
+
 // Function to read last N lines of a file
 function tail($filename, $lines = 200) {
-    if (!file_exists($filename) || !is_readable($filename)) {
-        return "Log file not found or not readable: " . htmlspecialchars($filename);
+    if (!file_exists($filename)) {
+        return "Log file does not exist. It will be created when errors are logged.";
+    }
+    
+    if (!is_readable($filename)) {
+        return "Log file is not readable. Check file permissions.";
+    }
+    
+    if (filesize($filename) === 0) {
+        return "Log file is empty. No errors have been logged yet.";
     }
     
     $file = new SplFileObject($filename, 'r');
