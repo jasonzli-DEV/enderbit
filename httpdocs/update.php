@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/config.php';
 
 // Check if admin is logged in
-if (!isset($_SESSION['admin'])) {
+if (!isset($_SESSION['admin_logged_in'])) {
     header("Location: admin.php");
     exit;
 }
