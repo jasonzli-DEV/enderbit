@@ -178,10 +178,10 @@ if ($wasOpenNowClosed) {
     $sendToCustomer = true;
     $sendToAdmin = true;
 } elseif ($isAdmin && !empty($replyMessage)) {
-    // Admin replied - notify customer and admin
+    // Admin replied - notify customer only (not admin)
     $emailSubject = "New Reply on Your Ticket: {$ticketSubject} [#{$ticketId}]";
     $sendToCustomer = true;
-    $sendToAdmin = true;
+    $sendToAdmin = false;
 } elseif (!$isAdmin && !empty($replyMessage)) {
     // Customer replied - notify admin only
     $emailSubject = "Customer Reply on Ticket: {$ticketSubject} [#{$ticketId}]";
@@ -250,9 +250,9 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+.header { background: #1f6feb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
-.ticket-info { background: white; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; }
+.ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>
