@@ -318,6 +318,29 @@ require_once __DIR__ . '/config.php';
     justify-content:center;
   }
 
+  /* Banner System */
+  .banner {
+    position:fixed;
+    left:-500px;
+    top:20px;
+    padding:12px 16px;
+    border-radius:10px;
+    min-width:260px;
+    max-width:400px;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:left .45s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index:2200;
+  }
+  .banner.show{ left:20px; }
+  .banner.hide{ left:-500px !important; }
+  .banner.success{ background:var(--green); color:#fff; }
+  .banner.error{ background:var(--red); color:#fff; }
+  .banner .close{ cursor:pointer; font-weight:700; color:#fff; padding-left:12px; opacity:0.8; }
+  .banner .close:hover{ opacity:1; }
+
   @media (max-width: 768px) {
     .hero h1 { font-size:36px; }
     .hero p { font-size:18px; }
@@ -352,6 +375,13 @@ require_once __DIR__ . '/config.php';
       </div>
     </div>
   </nav>
+
+  <?php if (isset($_GET['msg'])): ?>
+    <div id="banner" class="banner <?= htmlspecialchars($_GET['type'] ?? 'success') ?>">
+      <span><?= htmlspecialchars($_GET['msg']) ?></span>
+      <span class="close" onclick="hideBanner()">×</span>
+    </div>
+  <?php endif; ?>
 
   <section class="hero">
     <h1>Premium Game Server Hosting</h1>
@@ -448,6 +478,20 @@ require_once __DIR__ . '/config.php';
   </footer>
 
 <script>
+// Banner system
+function hideBanner(){
+  const b = document.getElementById('banner');
+  if (!b) return;
+  b.classList.remove('show');
+  setTimeout(()=>{ if(b) b.style.left='-500px'; }, 450);
+}
+window.addEventListener('load', ()=>{
+  const b = document.getElementById('banner');
+  if (!b) return;
+  setTimeout(()=> b.classList.add('show'), 120);
+  setTimeout(()=> hideBanner(), 5000);
+});
+
 // Theme toggle with localStorage
 function toggleTheme(){
   const html = document.documentElement;

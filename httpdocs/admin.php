@@ -176,9 +176,39 @@ if (isset($_POST['approve_user'])) {
   .filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
   .filter-select{flex:1;min-width:150px;padding:10px;border-radius:8px;border:1px solid var(--input-border);background:var(--card);color:var(--text);font-size:14px;}
   .filter-results{margin-top:12px;font-size:13px;color:var(--muted);text-align:center;}
+
+  /* Banner System */
+  .banner {
+    position:fixed;
+    left:-500px;
+    top:20px;
+    padding:12px 16px;
+    border-radius:10px;
+    min-width:260px;
+    max-width:400px;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:left .45s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index:2200;
+  }
+  .banner.show{ left:20px; }
+  .banner.hide{ left:-500px !important; }
+  .banner.success{ background:var(--green); color:#fff; }
+  .banner.error{ background:var(--red); color:#fff; }
+  .banner .close{ cursor:pointer; font-weight:700; color:#fff; padding-left:12px; opacity:0.8; }
+  .banner .close:hover{ opacity:1; }
 </style>
 </head>
 <body>
+  <?php if (isset($_GET['msg'])): ?>
+    <div id="banner" class="banner <?= htmlspecialchars($_GET['type'] ?? 'success') ?>">
+      <span><?= htmlspecialchars($_GET['msg']) ?></span>
+      <span class="close" onclick="hideBanner()">×</span>
+    </div>
+  <?php endif; ?>
+
 <div class="page">
   <div class="card">
     <?php if (!isset($_SESSION['admin_logged_in'])): ?>
@@ -191,11 +221,12 @@ if (isset($_POST['approve_user'])) {
     <?php else: ?>
       <h1>Admin Panel</h1>
 
-      <?php if (isset($_GET['msg'])): ?>
-        <p style="color:<?= $_GET['type'] === 'error' ? 'var(--red)' : 'var(--green)' ?>;">
-          <?= htmlspecialchars($_GET['msg']) ?>
-        </p>
-      <?php endif; ?>
+      <div style="margin-bottom:20px;">
+        <a href="logs.php" class="btn btn-primary" style="background:var(--yellow);display:inline-block;padding:10px 20px;border-radius:8px;text-decoration:none;color:#fff;font-weight:600;">📋 View System Logs</a>
+        <form method="post" style="display:inline;">
+          <button type="submit" name="logout" class="btn btn-secondary" style="margin-left:8px;">Logout</button>
+        </form>
+      </div>
 
       <!-- Dashboard Statistics -->
       <?php
@@ -464,6 +495,20 @@ if (isset($_POST['approve_user'])) {
     });
   }
 })();
+
+// Banner system
+function hideBanner(){
+  const b = document.getElementById('banner');
+  if (!b) return;
+  b.classList.remove('show');
+  setTimeout(()=>{ if(b) b.style.left='-500px'; }, 450);
+}
+window.addEventListener('load', ()=>{
+  const b = document.getElementById('banner');
+  if (!b) return;
+  setTimeout(()=> b.classList.add('show'), 120);
+  setTimeout(()=> hideBanner(), 5000);
+});
 </script>
 </body>
 </html>
