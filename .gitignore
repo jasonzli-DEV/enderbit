@@ -1,0 +1,107 @@
+# Sensitive Configuration Files
+config.php
+httpdocs/config.php
+
+# JSON Data Files (contain sensitive user data)
+httpdocs/tokens.json
+httpdocs/tickets.json
+httpdocs/settings.json
+
+# Logs
+*.log
+httpdocs/*.log
+httpdocs/deployment.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.phpintel/
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*~
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# PHP
+vendor/
+composer.phar
+composer.lock
+
+# Node (if you add any frontend tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+
+# Cache
+cache/
+*.cache
+
+# Uploaded Files (if you add file uploads)
+uploads/
+httpdocs/uploads/
+
+# Session Files
+sessions/
+httpdocs/sessions/
+
+# Test Files
+phpunit.xml
+.phpunit.result.cache
