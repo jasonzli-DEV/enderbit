@@ -142,17 +142,56 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     .welcome h1 { font-size:22px; }
   }
 
+  /* Navigation */
+  nav {
+    background:var(--card);
+    border-bottom:1px solid var(--input-border);
+    padding:16px 0;
+    position:sticky;
+    top:0;
+    z-index:1000;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+  nav .container {
+    max-width:1200px;
+    margin:0 auto;
+    padding:0 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  nav .logo {
+    font-size:24px;
+    font-weight:700;
+    color:var(--accent);
+    text-decoration:none;
+  }
+  nav .nav-links {
+    display:flex;
+    gap:28px;
+    align-items:center;
+  }
+  nav .nav-links a {
+    color:var(--text);
+    text-decoration:none;
+    font-weight:500;
+    transition:color .2s;
+  }
+  nav .nav-links a:hover { color:var(--accent); }
+  nav .nav-links a.active {
+    color:var(--accent);
+    border-bottom:2px solid var(--accent);
+    padding-bottom:2px;
+  }
+  
   /* Theme toggle button */
   .theme-toggle {
-    position:fixed;
-    top:18px; right:20px;
     background:var(--card);
     border:1px solid var(--input-border);
     border-radius:8px;
     padding:6px 10px;
     font-size:14px;
     cursor:pointer;
-    z-index:2300;
     color:var(--text);
   }
 
@@ -180,20 +219,18 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
-  <nav style="background:var(--card);border-bottom:1px solid var(--input-border);padding:16px 0;position:sticky;top:0;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.3);">
-    <div style="max-width:1200px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center;">
-      <a href="/" style="font-size:24px;font-weight:700;color:var(--accent);text-decoration:none;">EnderBit</a>
-      <div style="display:flex;gap:28px;align-items:center;">
-        <a href="/services.php" style="color:var(--text);text-decoration:none;font-weight:500;">Services</a>
-        <a href="/signup.php" style="color:var(--accent);text-decoration:none;font-weight:500;border-bottom:2px solid var(--accent);padding-bottom:2px;">Sign Up</a>
-        <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank" style="color:var(--text);text-decoration:none;font-weight:500;">Login</a>
-        <a href="/support.php" style="color:var(--text);text-decoration:none;font-weight:500;">Support</a>
+  <nav>
+    <div class="container">
+      <a href="/" class="logo">EnderBit</a>
+      <div class="nav-links">
+        <a href="/services.php">Services</a>
+        <a href="/signup.php" class="active">Sign Up</a>
+        <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
+        <a href="/support.php">Support</a>
         <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
       </div>
     </div>
   </nav>
-
-  <button class="theme-toggle" onclick="toggleTheme()" style="position:fixed;top:18px;right:20px;display:none;">🌙</button>
 
   <?php if ($msg): ?>
     <div id="banner" class="banner <?= htmlspecialchars($type ?: 'success') ?>">

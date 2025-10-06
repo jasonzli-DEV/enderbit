@@ -505,7 +505,9 @@ $justCreated = isset($_GET['created']);
         <!-- Original Message -->
         <div class="message user-message">
           <div class="message-header">
-            <span class="message-author">👤 You</span>
+            <span class="message-author">
+              <?= (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) ? '👤 Customer' : '👤 You' ?>
+            </span>
             <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?></span>
           </div>
           <div class="message-content"><?= htmlspecialchars($ticket['description']) ?></div>
@@ -526,7 +528,13 @@ $justCreated = isset($_GET['created']);
             <div class="message <?= $reply['is_admin'] ? 'admin-message' : 'user-message' ?>">
               <div class="message-header">
                 <span class="message-author">
-                  <?= $reply['is_admin'] ? '👨‍💼 Support Team' : '👤 You' ?>
+                  <?php
+                  if ($reply['is_admin']) {
+                    echo '👨‍💼 Support Team';
+                  } else {
+                    echo (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) ? '👤 Customer' : '👤 You';
+                  }
+                  ?>
                 </span>
                 <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($reply['created_at']))) ?></span>
               </div>
