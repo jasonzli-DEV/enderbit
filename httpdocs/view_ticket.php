@@ -684,14 +684,34 @@ function format_user_time($datetime, $timezone) {
         These notes are private and only visible to admins. Customers cannot see internal notes.
       </p>
       
-      <!-- Display existing internal notes -->
-      <?php if (!empty($ticket['internal_notes']) && is_array($ticket['internal_notes'])): ?>
+      <!-- Display existing internal notes from all tickets with same email -->
+      <?php 
+      // Load all internal notes for this email address across all tickets
+      $allInternalNotes = [];
+      foreach ($tickets as $t) {
+          if ($t['email'] === $ticket['email'] && !empty($t['internal_notes']) && is_array($t['internal_notes'])) {
+              foreach ($t['internal_notes'] as $note) {
+                  $note['ticket_id'] = $t['id']; // Add ticket ID for reference
+                  $allInternalNotes[] = $note;
+              }
+          }
+      }
+      
+      // Sort notes by date (newest first)
+      usort($allInternalNotes, function($a, $b) {
+          return strtotime($b['created_at']) - strtotime($a['created_at']);
+      });
+      
+      if (!empty($allInternalNotes)): ?>
         <div class="notes-list">
-          <?php foreach ($ticket['internal_notes'] as $note): ?>
+          <?php foreach ($allInternalNotes as $note): ?>
             <div class="internal-note">
               <div class="note-header">
                 <span class="note-author">🔒 <?= htmlspecialchars($note['author'] ?? 'Admin') ?></span>
                 <span class="note-time"><?= htmlspecialchars(format_user_time($note['created_at'], $displayTimezone)) ?></span>
+                <span class="note-ticket" style="color:var(--muted);font-size:12px;margin-left:8px;">
+                  (Ticket: <?= htmlspecialchars($note['ticket_id']) ?>)
+                </span>
               </div>
               <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
             </div>

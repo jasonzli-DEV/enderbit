@@ -64,16 +64,17 @@ for ($i = 0; $i < count($tickets); $i++) {
             $tickets[$i]['internal_notes'][] = [
                 'note' => $internalNote,
                 'author' => 'Admin', // You can enhance this to track which admin
+                'ticket_id' => $ticketId, // Track which ticket the note was created in
                 'created_at' => date('Y-m-d H:i:s')
             ];
             
             // Save and redirect immediately for internal notes (no email needed)
             if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
-                header("Location: /ticket/$ticketId&msg=" . urlencode("Internal note added successfully"));
+                header("Location: /ticket/$ticketId?msg=" . urlencode("Internal note added successfully"));
                 exit;
             } else {
                 error_log("Failed to save internal note");
-                header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save note. Please try again."));
+                header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save note. Please try again."));
                 exit;
             }
         }
