@@ -7,7 +7,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$email = trim($_POST['email'] ?? '');\n$category = trim($_POST['category'] ?? 'other');\n$subject = trim($_POST['subject'] ?? '');\n$description = trim($_POST['description'] ?? '');\n\n// Validate input\nif (empty($email) || empty($subject) || empty($description) || empty($category)) {\n    header("Location: support.php?msg=" . urlencode("All fields are required") . "&type=error");\n    exit;\n}
+$email = trim($_POST['email'] ?? '');
+$category = trim($_POST['category'] ?? 'other');
+$priority = trim($_POST['priority'] ?? 'medium');
+$subject = trim($_POST['subject'] ?? '');
+$description = trim($_POST['description'] ?? '');
+
+// Validate input
+if (empty($email) || empty($subject) || empty($description) || empty($category) || empty($priority)) {
+    header("Location: support.php?msg=" . urlencode("All fields are required") . "&type=error");
+    exit;
+}
+
+// Validate priority
+if (!in_array($priority, ['low', 'medium', 'high', 'urgent'])) {
+    $priority = 'medium';
+}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     header("Location: support.php?msg=" . urlencode("Invalid email address") . "&type=error");
@@ -28,8 +43,53 @@ if (!is_array($tickets)) {
 // Generate unique ticket ID
 $ticketId = 'TICKET-' . strtoupper(bin2hex(random_bytes(4)));
 
+// Handle file attachment
+$attachmentPath = null;
+if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = __DIR__ . '/uploads/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain', 'application/zip', 'application/x-zip-compressed'];
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    
+    $fileType = $_FILES['attachment']['type'];
+    $fileSize = $_FILES['attachment']['size'];
+    $fileName = $_FILES['attachment']['name'];
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    
+    if (!in_array($fileType, $allowedTypes) && !in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt', 'log', 'zip'])) {
+        header("Location: support.php?msg=" . urlencode("Invalid file type. Allowed: JPG, PNG, GIF, PDF, TXT, LOG, ZIP") . "&type=error");
+        exit;
+    }
+    
+    if ($fileSize > $maxSize) {
+        header("Location: support.php?msg=" . urlencode("File too large. Maximum size is 5MB") . "&type=error");
+        exit;
+    }
+    
+    $safeFileName = $ticketId . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $fileName);
+    $uploadPath = $uploadDir . $safeFileName;
+    
+    if (move_uploaded_file($_FILES['attachment']['tmp_name'], $uploadPath)) {
+        $attachmentPath = 'uploads/' . $safeFileName;
+    }
+}
+
 // Create new ticket
-// Create new ticket\n$newTicket = [\n    'id' => $ticketId,\n    'email' => $email,\n    'category' => $category,\n    'subject' => $subject,\n    'description' => $description,\n    'status' => 'open',\n    'created_at' => date('Y-m-d H:i:s'),\n    'replies' => []\n];
+$newTicket = [
+    'id' => $ticketId,
+    'email' => $email,
+    'category' => $category,
+    'priority' => $priority,
+    'subject' => $subject,
+    'description' => $description,
+    'status' => 'open',
+    'created_at' => date('Y-m-d H:i:s'),
+    'attachment' => $attachmentPath,
+    'replies' => []
+];
 
 $tickets[] = $newTicket;
 

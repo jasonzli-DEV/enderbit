@@ -8,6 +8,9 @@ httpdocs/tickets.json
 httpdocs/settings.json
 httpdocs/version.json
 
+# Uploads (user attachments)
+httpdocs/uploads/
+
 # Logs
 *.log
 httpdocs/*.log

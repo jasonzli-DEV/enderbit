@@ -235,7 +235,7 @@ if (isset($_POST['approve_user'])) {
         <label><input type="checkbox" name="require_admin_approve" <?= !empty($settings['require_admin_approve']) ? 'checked':'' ?>> Require Admin Approval</label>
 
         <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">
-          🔄 Pull Latest Updates
+          🔄 Update Panel
           <?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
         </a>
         <button type="submit" name="save_exit" class="btn btn-primary">Save and Exit</button>
@@ -307,9 +307,22 @@ if (isset($_POST['approve_user'])) {
                               echo $icon . ' <strong>' . htmlspecialchars(ucfirst($ticket['category'])) . '</strong> | ';
                               ?>
                             <?php endif; ?>
+                            <?php if (!empty($ticket['priority'])): ?>
+                              <?php
+                              $priorityIcons = [
+                                'low' => '🟢',
+                                'medium' => '🟡',
+                                'high' => '🟠',
+                                'urgent' => '🔴'
+                              ];
+                              $pIcon = $priorityIcons[$ticket['priority']] ?? '⚪';
+                              echo $pIcon . ' <strong>' . htmlspecialchars(ucfirst($ticket['priority'])) . '</strong> | ';
+                              ?>
+                            <?php endif; ?>
                             From: <strong><?= htmlspecialchars($ticket['email']) ?></strong> | 
                             Created: <?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?> | 
                             <?php if ($replyCount > 0): ?>💬 <strong><?= $replyCount ?></strong> replies<?php endif; ?>
+                            <?php if (!empty($ticket['attachment'])): ?> | 📎 Attachment<?php endif; ?>
                           </div>
                         </div>
                         <span class="status-badge status-<?= htmlspecialchars($ticket['status']) ?>">

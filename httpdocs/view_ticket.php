@@ -199,6 +199,37 @@ $justCreated = isset($_GET['created']);
     color:var(--accent);
     border:1px solid var(--accent);
   }
+  
+  .priority-badge {
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .priority-low { background:rgba(34,197,94,.15); color:var(--green); border:1px solid var(--green); }
+  .priority-medium { background:rgba(234,179,8,.15); color:var(--yellow); border:1px solid var(--yellow); }
+  .priority-high { background:rgba(249,115,22,.15); color:var(--yellow); border:1px solid var(--yellow); }
+  .priority-urgent { background:rgba(239,68,68,.15); color:var(--red); border:1px solid var(--red); }
+  
+  .attachment-box {
+    background:var(--input-bg);
+    border:1px solid var(--input-border);
+    border-radius:10px;
+    padding:16px;
+    margin-top:16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .attachment-box a {
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:600;
+  }
+  .attachment-box a:hover {
+    text-decoration:underline;
+  }
 
   /* Messages */
   .messages {
@@ -414,6 +445,21 @@ $justCreated = isset($_GET['created']);
             </span>
           </div>
           <?php endif; ?>
+          <?php if (!empty($ticket['priority'])): ?>
+          <div class="ticket-meta-item">
+            <span class="priority-badge priority-<?= htmlspecialchars($ticket['priority']) ?>">
+              <?php
+              $priorityLabels = [
+                'low' => '🟢 Low',
+                'medium' => '🟡 Medium',
+                'high' => '🟠 High',
+                'urgent' => '🔴 Urgent'
+              ];
+              echo htmlspecialchars($priorityLabels[$ticket['priority']] ?? ucfirst($ticket['priority']));
+              ?>
+            </span>
+          </div>
+          <?php endif; ?>
           <div class="ticket-meta-item">
             <span>📧</span>
             <span><?= htmlspecialchars($ticket['email']) ?></span>
@@ -438,6 +484,15 @@ $justCreated = isset($_GET['created']);
             <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?></span>
           </div>
           <div class="message-content"><?= htmlspecialchars($ticket['description']) ?></div>
+          <?php if (!empty($ticket['attachment'])): ?>
+          <div class="attachment-box">
+            <span>📎</span>
+            <a href="<?= htmlspecialchars($ticket['attachment']) ?>" target="_blank" download>
+              <?= htmlspecialchars(basename($ticket['attachment'])) ?>
+            </a>
+            <span style="color:var(--muted);font-size:13px;">(<?= number_format(filesize(__DIR__ . '/' . $ticket['attachment']) / 1024, 1) ?> KB)</span>
+          </div>
+          <?php endif; ?>
         </div>
 
         <!-- Replies -->

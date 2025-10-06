@@ -301,7 +301,7 @@ require_once __DIR__ . '/config.php';
         </div>
       <?php endif; ?>
 
-      <form method="post" action="create_ticket.php" class="ticket-form">
+      <form method="post" action="create_ticket.php" class="ticket-form" enctype="multipart/form-data">
         <div class="form-group">
           <label for="email">Your Email *</label>
           <input type="email" id="email" name="email" required placeholder="your@email.com">
@@ -312,10 +312,21 @@ require_once __DIR__ . '/config.php';
           <select id="category" name="category" required style="width:100%;padding:14px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:15px;">
             <option value="">Select a category...</option>
             <option value="technical">💻 Technical Support</option>
-            <option value="billing">💳 Billing & Payment</option>
+            <option value="billing">💳 Get a Server</option>
             <option value="account">👤 Account Issues</option>
             <option value="feature">✨ Feature Request</option>
             <option value="other">❓ Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="priority">Priority *</label>
+          <select id="priority" name="priority" required style="width:100%;padding:14px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:15px;">
+            <option value="">Select priority level...</option>
+            <option value="low">🟢 Low - General inquiry</option>
+            <option value="medium" selected>🟡 Medium - Issue affecting usage</option>
+            <option value="high">🟠 High - Significant problem</option>
+            <option value="urgent">🔴 Urgent - Service down/critical</option>
           </select>
         </div>
 
@@ -327,6 +338,12 @@ require_once __DIR__ . '/config.php';
         <div class="form-group">
           <label for="description">Issue Description *</label>
           <textarea id="description" name="description" required placeholder="Please provide detailed information about your issue..." rows="6"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="attachment">Attachment (Optional)</label>
+          <input type="file" id="attachment" name="attachment" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.log,.zip" style="width:100%;padding:14px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:15px;">
+          <small style="color:var(--muted);font-size:13px;display:block;margin-top:6px;">Max 5MB. Allowed: JPG, PNG, GIF, PDF, TXT, LOG, ZIP</small>
         </div>
 
         <button type="submit" class="btn-submit">Submit Ticket</button>
