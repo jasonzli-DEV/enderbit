@@ -168,7 +168,9 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 try {
     // Try SMTP first (use support email for tickets)
     send_smtp_email($email, $emailSubject, $emailBody, $config['support_smtp']);
+    error_log("Ticket creation email sent successfully to: {$email}");
 } catch (Exception $e) {
+    error_log("SMTP failed for ticket creation email: " . $e->getMessage());
     // Fallback to mail()
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
@@ -177,6 +179,8 @@ try {
     if (!mail($email, $emailSubject, $emailBody, $headers)) {
         error_log("Failed to send ticket confirmation email to: {$email}");
         // Don't fail the ticket creation if email fails
+    } else {
+        error_log("Ticket creation email sent via mail() fallback to: {$email}");
     }
 }
 
@@ -236,12 +240,16 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 try {
     // Try SMTP first for admin notification
     send_smtp_email($adminEmail, $adminEmailSubject, $adminEmailBody, $config['support_smtp']);
+    error_log("Admin notification email sent successfully to: {$adminEmail}");
 } catch (Exception $e) {
+    error_log("SMTP failed for admin notification: " . $e->getMessage());
     // Fallback to mail() for admin
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
     $headers .= "From: EnderBit Support <" . $adminEmail . ">\r\n";
-    @mail($adminEmail, $adminEmailSubject, $adminEmailBody, $headers);
+    if (@mail($adminEmail, $adminEmailSubject, $adminEmailBody, $headers)) {
+        error_log("Admin notification sent via mail() fallback to: {$adminEmail}");
+    }
 }
 
 // Redirect to success page
