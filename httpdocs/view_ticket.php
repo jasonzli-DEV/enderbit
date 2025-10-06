@@ -329,6 +329,31 @@ $justCreated = isset($_GET['created']);
     outline:none;
     border-color:var(--accent);
   }
+  .canned-responses {
+    margin-bottom:16px;
+  }
+  .canned-responses select {
+    width:100%;
+    padding:12px;
+    border:1px solid var(--input-border);
+    border-radius:10px;
+    background:var(--input-bg);
+    color:var(--text);
+    font-size:15px;
+    cursor:pointer;
+    transition:border-color .2s;
+  }
+  .canned-responses select:focus {
+    outline:none;
+    border-color:var(--accent);
+  }
+  .canned-responses label {
+    display:block;
+    margin-bottom:8px;
+    color:var(--text);
+    font-weight:600;
+    font-size:14px;
+  }
   .btn-submit {
     padding:14px 32px;
     background:var(--primary);
@@ -522,8 +547,27 @@ $justCreated = isset($_GET['created']);
       <form method="post" action="reply_ticket.php">
         <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticket['id']) ?>">
         <input type="hidden" name="is_admin" value="1">
+        
+        <!-- Canned Responses -->
+        <div class="canned-responses">
+          <label for="canned-select">📋 Quick Responses (Optional)</label>
+          <select id="canned-select" onchange="insertCannedResponse(this.value)">
+            <option value="">-- Select a template to insert --</option>
+            <option value="greeting">👋 Greeting & Acknowledge</option>
+            <option value="investigating">🔍 Investigating Issue</option>
+            <option value="need_more_info">ℹ️ Need More Information</option>
+            <option value="resolved">✅ Issue Resolved</option>
+            <option value="server_restart">🔄 Server Restart Instructions</option>
+            <option value="billing_info">💳 Billing Information</option>
+            <option value="account_verified">✓ Account Verified</option>
+            <option value="feature_request">✨ Feature Request Response</option>
+            <option value="apologize">🙏 Apologize for Inconvenience</option>
+            <option value="escalated">⬆️ Escalated to Technical Team</option>
+          </select>
+        </div>
+        
         <div class="reply-form-group">
-          <textarea name="reply_message" placeholder="Type your reply to the customer..." required></textarea>
+          <textarea id="reply-textarea" name="reply_message" placeholder="Type your reply to the customer..." required></textarea>
         </div>
         <button type="submit" class="btn-submit">Send Reply</button>
         <?php if ($ticket['status'] === 'open'): ?>
@@ -585,6 +629,48 @@ function toggleTheme(){
     });
   }
 })();
+
+// Canned responses templates
+const cannedResponses = {
+  greeting: "Hello,\n\nThank you for contacting EnderBit Support! We've received your ticket and our team is reviewing your request.\n\nWe'll get back to you as soon as possible with a solution.\n\nBest regards,\nEnderBit Support Team",
+  
+  investigating: "Hello,\n\nThank you for bringing this to our attention. Our technical team is currently investigating this issue.\n\nWe'll update you as soon as we have more information.\n\nBest regards,\nEnderBit Support Team",
+  
+  need_more_info: "Hello,\n\nTo help us resolve your issue more effectively, could you please provide the following additional information:\n\n- [Please specify what information is needed]\n\nOnce we have these details, we'll be able to assist you further.\n\nThank you for your cooperation!\n\nBest regards,\nEnderBit Support Team",
+  
+  resolved: "Hello,\n\nGreat news! We've successfully resolved the issue you reported.\n\nEverything should now be working as expected. If you experience any further problems or have additional questions, please don't hesitate to reach out.\n\nThank you for your patience!\n\nBest regards,\nEnderBit Support Team",
+  
+  server_restart: "Hello,\n\nTo resolve this issue, please try restarting your server:\n\n1. Log into your game panel\n2. Navigate to your server\n3. Click the 'Restart' button\n4. Wait 2-3 minutes for the server to fully restart\n\nIf the issue persists after restarting, please let us know and we'll investigate further.\n\nBest regards,\nEnderBit Support Team",
+  
+  billing_info: "Hello,\n\nRegarding your billing inquiry:\n\nYour current plan: [Plan Name]\nBilling cycle: [Monthly/Yearly]\nNext billing date: [Date]\n\nIf you have any questions about your billing or would like to make changes to your plan, please let us know.\n\nBest regards,\nEnderBit Support Team",
+  
+  account_verified: "Hello,\n\nGood news! Your account has been successfully verified and approved.\n\nYou can now log in to your panel and start using our services:\n<?= htmlspecialchars($config['ptero_url'] ?? 'https://panel.enderbit.com') ?>\n\nIf you need any assistance getting started, feel free to reach out!\n\nWelcome to EnderBit!\n\nBest regards,\nEnderBit Support Team",
+  
+  feature_request: "Hello,\n\nThank you for your feature request! We really appreciate your feedback.\n\nWe've added your suggestion to our feature request list and our development team will review it. While we can't guarantee implementation, we carefully consider all user feedback.\n\nWe'll keep you updated if this feature is added in the future.\n\nThank you for helping us improve!\n\nBest regards,\nEnderBit Support Team",
+  
+  apologize: "Hello,\n\nWe sincerely apologize for the inconvenience you've experienced.\n\nWe understand how frustrating this must be, and we're working hard to resolve this issue as quickly as possible. Your satisfaction is our top priority.\n\nThank you for your patience and understanding.\n\nBest regards,\nEnderBit Support Team",
+  
+  escalated: "Hello,\n\nThank you for your patience. We've escalated your ticket to our senior technical team for further investigation.\n\nThey will review your case in detail and get back to you with a solution. This may take 24-48 hours.\n\nWe appreciate your understanding.\n\nBest regards,\nEnderBit Support Team"
+};
+
+function insertCannedResponse(template) {
+  if (template && cannedResponses[template]) {
+    const textarea = document.getElementById('reply-textarea');
+    if (textarea) {
+      // If textarea is empty, insert template
+      // If textarea has content, append template with line breaks
+      if (textarea.value.trim() === '') {
+        textarea.value = cannedResponses[template];
+      } else {
+        textarea.value += '\n\n' + cannedResponses[template];
+      }
+      // Reset select dropdown
+      document.getElementById('canned-select').value = '';
+      // Focus textarea
+      textarea.focus();
+    }
+  }
+}
 </script>
 </body>
 </html>
