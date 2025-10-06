@@ -176,15 +176,19 @@ function sendEmail($to, $subject, $body, $config) {
     if (!empty($smtp['host']) && !empty($smtp['port'])) {
         // Handle SSL connection for port 465
         $host = ($smtp['port'] == 465 && $smtp['secure'] === 'ssl') ? 'ssl://' . $smtp['host'] : $smtp['host'];
+        error_log("Attempting SMTP connection to: {$host}:{$smtp['port']}");
         $socket = @fsockopen($host, $smtp['port'], $errno, $errstr, 5); // Reduced timeout to 5 seconds
         
         if ($socket) {
+            error_log("SMTP connection successful");
             // Set socket timeout to prevent hanging
             stream_set_timeout($socket, 10);
             
             $response = fgets($socket);
+            error_log("SMTP initial response: " . trim($response));
             fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
             $response = fgets($socket);
+            error_log("SMTP EHLO response: " . trim($response));
             
             if ($smtp['port'] == 587) {
                 fwrite($socket, "STARTTLS\r\n");
@@ -196,38 +200,56 @@ function sendEmail($to, $subject, $body, $config) {
             
             fwrite($socket, "AUTH LOGIN\r\n");
             $response = fgets($socket);
+            error_log("SMTP AUTH LOGIN response: " . trim($response));
             fwrite($socket, base64_encode($smtp['username']) . "\r\n");
             $response = fgets($socket);
+            error_log("SMTP username response: " . trim($response));
             fwrite($socket, base64_encode($smtp['password']) . "\r\n");
             $response = fgets($socket);
+            error_log("SMTP password response: " . trim($response));
             
-            fwrite($socket, "MAIL FROM: <{$from}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "RCPT TO: <{$to}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "DATA\r\n");
-            $response = fgets($socket);
-            
-            $emailContent = "From: {$fromName} <{$from}>\r\n";
-            $emailContent .= "To: {$to}\r\n";
-            $emailContent .= "Subject: {$subject}\r\n";
-            $emailContent .= "MIME-Version: 1.0\r\n";
-            $emailContent .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $emailContent .= "\r\n";
-            $emailContent .= $body;
-            $emailContent .= "\r\n.\r\n";
-            
-            fwrite($socket, $emailContent);
-            $response = fgets($socket);
-            
-            fwrite($socket, "QUIT\r\n");
-            fclose($socket);
-            return true;
+            if (strpos($response, '235') !== false) {
+                fwrite($socket, "MAIL FROM: <{$from}>\r\n");
+                $response = fgets($socket);
+                fwrite($socket, "RCPT TO: <{$to}>\r\n");
+                $response = fgets($socket);
+                fwrite($socket, "DATA\r\n");
+                $response = fgets($socket);
+                
+                $emailContent = "From: {$fromName} <{$from}>\r\n";
+                $emailContent .= "To: {$to}\r\n";
+                $emailContent .= "Subject: {$subject}\r\n";
+                $emailContent .= "MIME-Version: 1.0\r\n";
+                $emailContent .= "Content-Type: text/html; charset=UTF-8\r\n";
+                $emailContent .= "\r\n";
+                $emailContent .= $body;
+                $emailContent .= "\r\n.\r\n";
+                
+                fwrite($socket, $emailContent);
+                $response = fgets($socket);
+                
+                fwrite($socket, "QUIT\r\n");
+                fclose($socket);
+                error_log("SMTP email sent successfully");
+                return true;
+            } else {
+                error_log("SMTP authentication failed: " . trim($response));
+                fclose($socket);
+            }
+        } else {
+            error_log("SMTP connection failed: {$errstr} ({$errno})");
         }
     }
     
     // Fallback to mail()
-    return @mail($to, $subject, $body, $headers);
+    error_log("Using mail() fallback for email to: {$to}");
+    $result = @mail($to, $subject, $body, $headers);
+    if ($result) {
+        error_log("mail() function sent successfully");
+    } else {
+        error_log("mail() function failed");
+    }
+    return $result;
 }
 
 if (sendEmail($email, $emailSubject, $emailBody, $config)) {
