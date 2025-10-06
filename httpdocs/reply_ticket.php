@@ -5,9 +5,11 @@ require_once __DIR__ . '/config.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: support.php");
     exit;
-}
-
-$ticketId = trim($_POST['ticket_id'] ?? '');
+}if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
+    error_log("Failed to save ticket after adding reply");
+    header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save reply. Please try again."));
+    exit;
+}cketId = trim($_POST['ticket_id'] ?? '');
 $replyMessage = trim($_POST['reply_message'] ?? '');
 $isAdmin = isset($_POST['is_admin']) && $_POST['is_admin'] === '1';
 $closeTicket = isset($_POST['close_ticket']) && $_POST['close_ticket'] === '1';
@@ -23,7 +25,7 @@ if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $
 
 // Validate input (allow empty message if just closing/reopening ticket or adding internal note)
 if (empty($ticketId) || (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket)) {
-    header("Location: /ticket/$ticketId&msg=" . urlencode("Message cannot be empty"));
+    header("Location: /ticket/$ticketId?msg=" . urlencode("Message cannot be empty"));
     exit;
 }
 
@@ -69,11 +71,11 @@ for ($i = 0; $i < count($tickets); $i++) {
             
             // Save and redirect immediately for internal notes (no email needed)
             if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
-                header("Location: /ticket/$ticketId&msg=" . urlencode("Internal note added successfully"));
+                header("Location: /ticket/$ticketId?msg=" . urlencode("Internal note added successfully"));
                 exit;
             } else {
                 error_log("Failed to save internal note");
-                header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save note. Please try again."));
+                header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save note. Please try again."));
                 exit;
             }
         }
@@ -358,15 +360,15 @@ if ($isAdmin) {
     if ($wasOpenNowClosed) {
         header("Location: admin.php?msg=" . urlencode("Ticket closed successfully") . "&type=success");
     } elseif ($wasClosedNowReopened) {
-        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully") . "&type=success");
+        header("Location: /ticket/$ticketId?msg=" . urlencode("Ticket reopened successfully") . "&type=success");
     } else {
-        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully") . "&type=success");
+        header("Location: /ticket/$ticketId?msg=" . urlencode("Reply sent successfully") . "&type=success");
     }
 } else {
     if ($wasClosedNowReopened) {
-        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId?msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
     } else {
-        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId?msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
     }
 }
 exit;
