@@ -161,101 +161,22 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </body>
 </html>
 ";
-// Send email using sendEmail function
-function sendEmail($to, $subject, $body, $config) {
-    $from = $config['support_smtp']['from_email'];
-    $fromName = $config['support_smtp']['from_name'];
-    
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: {$fromName} <{$from}>\r\n";
-    $headers .= "Reply-To: {$from}\r\n";
-    
-    // Try SMTP first
-    $smtp = $config['support_smtp'];
-    if (!empty($smtp['host']) && !empty($smtp['port'])) {
-        // Handle SSL connection for port 465
-        $host = ($smtp['port'] == 465 && $smtp['secure'] === 'ssl') ? 'ssl://' . $smtp['host'] : $smtp['host'];
-        error_log("Attempting SMTP connection to: {$host}:{$smtp['port']}");
-        $socket = @fsockopen($host, $smtp['port'], $errno, $errstr, 5); // Reduced timeout to 5 seconds
-        
-        if ($socket) {
-            error_log("SMTP connection successful");
-            // Set socket timeout to prevent hanging
-            stream_set_timeout($socket, 10);
-            
-            $response = fgets($socket);
-            error_log("SMTP initial response: " . trim($response));
-            fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-            $response = fgets($socket);
-            error_log("SMTP EHLO response: " . trim($response));
-            
-            if ($smtp['port'] == 587) {
-                fwrite($socket, "STARTTLS\r\n");
-                $response = fgets($socket);
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-                $response = fgets($socket);
-            }
-            
-            fwrite($socket, "AUTH LOGIN\r\n");
-            $response = fgets($socket);
-            error_log("SMTP AUTH LOGIN response: " . trim($response));
-            fwrite($socket, base64_encode($smtp['username']) . "\r\n");
-            $response = fgets($socket);
-            error_log("SMTP username response: " . trim($response));
-            fwrite($socket, base64_encode($smtp['password']) . "\r\n");
-            $response = fgets($socket);
-            error_log("SMTP password response: " . trim($response));
-            
-            if (strpos($response, '235') !== false) {
-                fwrite($socket, "MAIL FROM: <{$from}>\r\n");
-                $response = fgets($socket);
-                fwrite($socket, "RCPT TO: <{$to}>\r\n");
-                $response = fgets($socket);
-                fwrite($socket, "DATA\r\n");
-                $response = fgets($socket);
-                
-                $emailContent = "From: {$fromName} <{$from}>\r\n";
-                $emailContent .= "To: {$to}\r\n";
-                $emailContent .= "Subject: {$subject}\r\n";
-                $emailContent .= "MIME-Version: 1.0\r\n";
-                $emailContent .= "Content-Type: text/html; charset=UTF-8\r\n";
-                $emailContent .= "\r\n";
-                $emailContent .= $body;
-                $emailContent .= "\r\n.\r\n";
-                
-                fwrite($socket, $emailContent);
-                $response = fgets($socket);
-                
-                fwrite($socket, "QUIT\r\n");
-                fclose($socket);
-                error_log("SMTP email sent successfully");
-                return true;
-            } else {
-                error_log("SMTP authentication failed: " . trim($response));
-                fclose($socket);
-            }
-        } else {
-            error_log("SMTP connection failed: {$errstr} ({$errno})");
-        }
-    }
-    
-    // Fallback to mail()
-    error_log("Using mail() fallback for email to: {$to}");
-    $result = @mail($to, $subject, $body, $headers);
-    if ($result) {
-        error_log("mail() function sent successfully");
-    } else {
-        error_log("mail() function failed");
-    }
-    return $result;
-}
-
-if (sendEmail($email, $emailSubject, $emailBody, $config)) {
+// Send email using the working send_smtp_email function from config.php
+try {
+    send_smtp_email($email, $emailSubject, $emailBody, $config['support_smtp']);
     error_log("Ticket creation email sent successfully to: {$email}");
-} else {
-    error_log("Failed to send ticket confirmation email to: {$email}");
+} catch (Exception $e) {
+    error_log("SMTP failed for ticket creation: " . $e->getMessage());
+    // Fallback to mail()
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: " . $config['support_smtp']['from_name'] . " <" . $config['support_smtp']['from_email'] . ">\r\n";
+    
+    if (mail($email, $emailSubject, $emailBody, $headers)) {
+        error_log("Ticket creation email sent via mail() fallback to: {$email}");
+    } else {
+        error_log("Failed to send ticket confirmation email to: {$email}");
+    }
 }
 
 // Send notification to admin using SMTP
@@ -311,11 +232,22 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </html>
 ";
 
-// Send admin notification using sendEmail function
-if (sendEmail($adminEmail, $adminEmailSubject, $adminEmailBody, $config)) {
-    error_log("Admin notification email sent successfully to: {$adminEmail}");
-} else {
-    error_log("Failed to send admin notification to: {$adminEmail}");
+// Send admin notification using the working send_smtp_email function
+try {
+    send_smtp_email($adminEmail, $adminEmailSubject, $adminEmailBody, $config['support_smtp']);
+    error_log("Admin notification sent successfully to: {$adminEmail}");
+} catch (Exception $e) {
+    error_log("SMTP failed for admin notification: " . $e->getMessage());
+    // Fallback to mail()
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: EnderBit Support <{$adminEmail}>\r\n";
+    
+    if (mail($adminEmail, $adminEmailSubject, $adminEmailBody, $headers)) {
+        error_log("Admin notification sent via mail() fallback to: {$adminEmail}");
+    } else {
+        error_log("Failed to send admin notification to: {$adminEmail}");
+    }
 }
 
 // Redirect to success page
