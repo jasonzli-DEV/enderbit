@@ -161,7 +161,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </body>
 </html>
 ";
-// Send email using working sendEmail function
+// Simple reliable email function
 function sendEmail($to, $subject, $body, $config) {
     $from = $config['support_smtp']['from_email'];
     $fromName = $config['support_smtp']['from_name'];
@@ -171,62 +171,8 @@ function sendEmail($to, $subject, $body, $config) {
     $headers .= "From: {$fromName} <{$from}>\r\n";
     $headers .= "Reply-To: {$from}\r\n";
     
-    // Try SMTP first
-    $smtp = $config['support_smtp'];
-    if (!empty($smtp['host']) && !empty($smtp['port'])) {
-        // Handle SSL connection for port 465
-        $host = ($smtp['port'] == 465 && $smtp['secure'] === 'ssl') ? 'ssl://' . $smtp['host'] : $smtp['host'];
-        $socket = @fsockopen($host, $smtp['port'], $errno, $errstr, 5);
-        
-        if ($socket) {
-            stream_set_timeout($socket, 10);
-            
-            $response = fgets($socket);
-            fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-            $response = fgets($socket);
-            
-            if ($smtp['port'] == 587) {
-                fwrite($socket, "STARTTLS\r\n");
-                $response = fgets($socket);
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-                $response = fgets($socket);
-            }
-            
-            fwrite($socket, "AUTH LOGIN\r\n");
-            $response = fgets($socket);
-            fwrite($socket, base64_encode($smtp['username']) . "\r\n");
-            $response = fgets($socket);
-            fwrite($socket, base64_encode($smtp['password']) . "\r\n");
-            $response = fgets($socket);
-            
-            fwrite($socket, "MAIL FROM: <{$from}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "RCPT TO: <{$to}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "DATA\r\n");
-            $response = fgets($socket);
-            
-            $emailContent = "From: {$fromName} <{$from}>\r\n";
-            $emailContent .= "To: {$to}\r\n";
-            $emailContent .= "Subject: {$subject}\r\n";
-            $emailContent .= "MIME-Version: 1.0\r\n";
-            $emailContent .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $emailContent .= "\r\n";
-            $emailContent .= $body;
-            $emailContent .= "\r\n.\r\n";
-            
-            fwrite($socket, $emailContent);
-            $response = fgets($socket);
-            
-            fwrite($socket, "QUIT\r\n");
-            fclose($socket);
-            return true;
-        }
-    }
-    
-    // Fallback to mail()
-    return @mail($to, $subject, $body, $headers);
+    // Just use mail() function - it's reliable
+    return mail($to, $subject, $body, $headers);
 }
 
 try {
