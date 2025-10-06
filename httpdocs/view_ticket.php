@@ -31,13 +31,11 @@ foreach ($tickets as $t) {
 }
 
 if (!$ticket) {
-    header("Location: support.php?msg="            <option value="resolved">✅ Issue Resolved</option>
-            <option value="server_restart">🔄 Server Restart Instructions</option>
-            <option value="get_server">💻 Get a Server</option>
-            <option value="account_verified">✓ Account Verified</option>
-            <option value="feature_request">✨ Feature Request Response</option>lencode("Ticket not found") . "&type=error");
+    header("Location: support.php?msg=" . urlencode("Ticket not found") . "&type=error");
     exit;
 }
+
+$justCreated = isset($_GET['created']);
 
 $justCreated = isset($_GET['created']);
 
