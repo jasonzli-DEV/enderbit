@@ -381,8 +381,8 @@ function sendEmail($to, $subject, $body, $config) {
     $headers .= "Reply-To: {$from}\r\n";
     
     // Try SMTP first
-    if ($config['support_smtp']['enabled']) {
-        $smtp = $config['support_smtp'];
+    $smtp = $config['support_smtp'];
+    if (!empty($smtp['host']) && !empty($smtp['port'])) {
         $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
         
         if ($socket) {
