@@ -31,9 +31,7 @@ foreach ($tickets as $t) {
 }
 
 if (!$ticket) {
-    header("Location: su            <option value="server_restart">🔄 Server Restart Instructions</option>
-            <option value="get_server">🖥️ Get a Server</option>
-            <option value="account_verified">✓ Account Verified</option>rt.php?msg=" . urlencode("Ticket not found") . "&type=error");
+    header("Location: support.php?msg=" . urlencode("Ticket not found") . "&type=error");
     exit;
 }
 
