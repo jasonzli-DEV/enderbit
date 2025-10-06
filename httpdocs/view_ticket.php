@@ -732,7 +732,7 @@ function format_user_time($datetime, $timezone) {
             <option value="need_more_info">ℹ️ Need More Information</option>
             <option value="resolved">✅ Issue Resolved</option>
             <option value="server_restart">🔄 Server Restart Instructions</option>
-            <option value="billing_info">💳 Billing Information</option>
+            <option value="get_server">�️ Get a Server</option>
             <option value="account_verified">✓ Account Verified</option>
             <option value="feature_request">✨ Feature Request Response</option>
             <option value="apologize">🙏 Apologize for Inconvenience</option>
@@ -830,7 +830,7 @@ const cannedResponses = {
   
   server_restart: "Hello,\n\nTo resolve this issue, please try restarting your server:\n\n1. Log into your game panel\n2. Navigate to your server\n3. Click the 'Restart' button\n4. Wait 2-3 minutes for the server to fully restart\n\nIf the issue persists after restarting, please let us know and we'll investigate further.\n\nBest regards,\nEnderBit Support Team",
 
-  billing_info: "Hello,\n\nTo get a server with EnderBit:\n\n1. Create a Support Ticket\n2. Select Get a Server\n3. Tell us your game type (Minecraft, Terraria, etc.)\n4. Choose your plan and configuration\n5. Click Submit Ticket\n\nYour server will be ready within 48 hours!\n\nIf you have any questions about pricing or plans, feel free to ask.\n\nBest regards,\nEnderBit Support Team",
+  get_server: "Hello,\n\nThank you for your interest in getting a server with EnderBit!\n\nTo help us set up the perfect server for you, please provide the following information:\n\n1. **Server Type**: What game or application? (e.g., Minecraft, Terraria, Discord Bot, Web Server)\n2. **Player Count**: How many players do you expect?\n3. **RAM Needed**: How much memory do you need? (e.g., 2GB, 4GB, 8GB)\n4. **Storage**: How much disk space? (e.g., 10GB, 25GB, 50GB)\n5. **Special Requirements**: Any mods, plugins, or specific configurations?\n\nOnce you provide these details, we'll set up your server and have it ready within 48 hours!\n\nBest regards,\nEnderBit Support Team",
 
   account_verified: "Hello,\n\nGood news! Your account has been successfully verified and approved.\n\nYou can now log in to your panel and start using our services:\n<?= htmlspecialchars($config['ptero_url'] ?? 'https://panel.enderbit.com') ?>\n\nIf you need any assistance getting started, feel free to reach out!\n\nWelcome to EnderBit!\n\nBest regards,\nEnderBit Support Team",
   

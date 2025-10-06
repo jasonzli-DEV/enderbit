@@ -109,28 +109,6 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   .footer { text-align:center; margin-top:6px; color:var(--muted); font-size:13px; }
   .footer a { color:var(--accent); text-decoration:none; }
 
-  .banner {
-    position:fixed;
-    left:-500px;
-    top:20px;
-    padding:12px 16px;
-    border-radius:10px;
-    min-width:260px;
-    max-width:400px;
-    box-shadow:0 8px 30px rgba(0,0,0,.5);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    transition:left .45s cubic-bezier(0.4, 0.0, 0.2, 1);
-    z-index:2200;
-  }
-  .banner.show{ left:20px; }
-  .banner.hide{ left:-500px !important; }
-  .banner.success{ background:var(--green); color:#fff; }
-  .banner.error{ background:var(--red); color:#fff; }
-  .banner .close{ cursor:pointer; font-weight:700; color:#fff; padding-left:12px; opacity:0.8; }
-  .banner .close:hover{ opacity:1; }
-
   @media (min-width: 768px) {
     .card { max-width:900px; padding:44px; }
     input, .btn { font-size:16px; padding:15px; }
@@ -236,6 +214,29 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     align-items:center;
     justify-content:center;
   }
+
+  /* Banner System */
+  .banner {
+    position:fixed;
+    left:-500px;
+    top:20px;
+    padding:12px 16px;
+    border-radius:10px;
+    min-width:260px;
+    max-width:400px;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:left .45s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index:2200;
+  }
+  .banner.show{ left:20px; }
+  .banner.hide{ left:-500px !important; }
+  .banner.success{ background:var(--green); color:#fff; }
+  .banner.error{ background:var(--red); color:#fff; }
+  .banner .close{ cursor:pointer; font-weight:700; color:#fff; padding-left:12px; opacity:0.8; }
+  .banner .close:hover{ opacity:1; }
 
   /* Footer */
   footer {
