@@ -7,16 +7,8 @@ if (!isset($_SESSION['admin_logged_in'])) {
     header("Location: admin.php");
     exit;
 }
-            // Compare versions
-            $isUpToDate = ($currentVersion === $latestVersion);
-            
-            $response['success'] = true;
-            
-            if ($isUpToDate) {
-                $response['message'] = "✅ Your site is up to date!";
-            } else {
-                $response['message'] = "🔔 Update available! Your site is out of date.";
-            }ment log file
+
+// Deployment log file
 $logFile = __DIR__ . '/deployment.log';
 
 // Function to log deployment activities
@@ -198,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($isUpToDate) {
                 $response['message'] = "✅ Your site is up to date!";
             } else {
-                $response['message'] = "� Update available! Your site is out of date.";
+                $response['message'] = "🔔 Update available! Your site is out of date.";
             }
             
             $response['log'] = "═══════════════════════════════════\n" .
