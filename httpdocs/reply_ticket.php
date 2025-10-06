@@ -15,6 +15,10 @@ $reopenTicket = isset($_POST['reopen_ticket']) && $_POST['reopen_ticket'] === '1
 $addInternalNote = isset($_POST['add_internal_note']) && $_POST['add_internal_note'] === '1';
 $internalNote = trim($_POST['internal_note'] ?? '');
 
+// Log the received ticket_id for debugging
+error_log("reply_ticket.php - Received ticket_id: '" . $ticketId . "' (length: " . strlen($ticketId) . ")");
+error_log("reply_ticket.php - POST data: " . print_r($_POST, true));
+
 // Validate admin for admin actions
 if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
     header("Location: admin.php");
@@ -22,7 +26,13 @@ if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $
 }
 
 // Validate input (allow empty message if just closing/reopening ticket or adding internal note)
-if (empty($ticketId) || (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket)) {
+if (empty($ticketId)) {
+    error_log("reply_ticket.php - ERROR: Empty ticket_id received");
+    header("Location: support.php?msg=" . urlencode("Invalid ticket ID") . "&type=error");
+    exit;
+}
+
+if (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket) {
     header("Location: /ticket/$ticketId?msg=" . urlencode("Message cannot be empty"));
     exit;
 }
