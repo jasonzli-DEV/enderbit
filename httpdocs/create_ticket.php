@@ -77,6 +77,10 @@ if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ER
     }
 }
 
+// Capture user IP and timezone
+$userIp = get_client_ip();
+$userTimezone = get_timezone_from_ip($userIp);
+
 // Create new ticket
 $newTicket = [
     'id' => $ticketId,
@@ -87,6 +91,8 @@ $newTicket = [
     'description' => $description,
     'status' => 'open',
     'created_at' => date('Y-m-d H:i:s'),
+    'user_ip' => $userIp,
+    'user_timezone' => $userTimezone,
     'attachment' => $attachmentPath,
     'replies' => []
 ];

@@ -36,6 +36,21 @@ if (!$ticket) {
 }
 
 $justCreated = isset($_GET['created']);
+
+// Get timezone for displaying times
+$displayTimezone = $ticket['user_timezone'] ?? 'America/New_York';
+
+// Helper function to format datetime in user's timezone
+function format_user_time($datetime, $timezone) {
+    try {
+        $dt = new DateTime($datetime, new DateTimeZone('UTC'));
+        $dt->setTimezone(new DateTimeZone($timezone));
+        return $dt->format('M j, Y, g:i A') . ' ' . $dt->format('T');
+    } catch (Exception $e) {
+        // Fallback to original formatting
+        return date('M j, Y, g:i A', strtotime($datetime));
+    }
+}
 ?>
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -592,7 +607,7 @@ $justCreated = isset($_GET['created']);
           </div>
           <div class="ticket-meta-item">
             <span>📅</span>
-            <span><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?></span>
+            <span><?= htmlspecialchars(format_user_time($ticket['created_at'], $displayTimezone)) ?></span>
           </div>
           <div class="ticket-meta-item">
             <span class="status-badge status-<?= htmlspecialchars($ticket['status']) ?>">
@@ -609,7 +624,7 @@ $justCreated = isset($_GET['created']);
             <span class="message-author">
               <?= (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) ? '👤 Customer' : '👤 You' ?>
             </span>
-            <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?></span>
+            <span class="message-time"><?= htmlspecialchars(format_user_time($ticket['created_at'], $displayTimezone)) ?></span>
           </div>
           <div class="message-content"><?= htmlspecialchars($ticket['description']) ?></div>
           <?php if (!empty($ticket['attachment'])): ?>
@@ -637,7 +652,7 @@ $justCreated = isset($_GET['created']);
                   }
                   ?>
                 </span>
-                <span class="message-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($reply['created_at']))) ?></span>
+                <span class="message-time"><?= htmlspecialchars(format_user_time($reply['created_at'], $displayTimezone)) ?></span>
               </div>
               <div class="message-content"><?= htmlspecialchars($reply['message']) ?></div>
               <?php if (!empty($reply['attachment'])): ?>
@@ -672,7 +687,7 @@ $justCreated = isset($_GET['created']);
             <div class="internal-note">
               <div class="note-header">
                 <span class="note-author">🔒 <?= htmlspecialchars($note['author'] ?? 'Admin') ?></span>
-                <span class="note-time"><?= htmlspecialchars(date('M j, Y, g:i A', strtotime($note['created_at']))) ?></span>
+                <span class="note-time"><?= htmlspecialchars(format_user_time($note['created_at'], $displayTimezone)) ?></span>
               </div>
               <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
             </div>

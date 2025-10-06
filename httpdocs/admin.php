@@ -2,6 +2,18 @@
 session_start();
 require_once __DIR__ . '/config.php';
 
+// Helper function to format datetime in user's timezone
+function format_user_time($datetime, $timezone) {
+    try {
+        $dt = new DateTime($datetime, new DateTimeZone('UTC'));
+        $dt->setTimezone(new DateTimeZone($timezone));
+        return $dt->format('M j, Y, g:i A') . ' ' . $dt->format('T');
+    } catch (Exception $e) {
+        // Fallback to original formatting
+        return date('M j, Y, g:i A', strtotime($datetime));
+    }
+}
+
 // Function to check if updates are available
 function checkForUpdates() {
     $versionFile = __DIR__ . '/version.json';
@@ -355,7 +367,7 @@ if (isset($_POST['approve_user'])) {
                               ?>
                             <?php endif; ?>
                             From: <strong><?= htmlspecialchars($ticket['email']) ?></strong> | 
-                            Created: <?= htmlspecialchars(date('M j, Y, g:i A', strtotime($ticket['created_at']))) ?> | 
+                            Created: <?= htmlspecialchars(format_user_time($ticket['created_at'], $ticket['user_timezone'] ?? 'America/New_York')) ?> | 
                             <?php if ($replyCount > 0): ?>💬 <strong><?= $replyCount ?></strong> replies<?php endif; ?>
                             <?php if (!empty($ticket['attachment'])): ?> | 📎 Attachment<?php endif; ?>
                           </div>
