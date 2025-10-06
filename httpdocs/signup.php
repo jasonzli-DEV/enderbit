@@ -196,24 +196,16 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   }
 
   /* Footer */
-  .site-footer {
+  footer {
     background:transparent;
     border-top:1px solid var(--input-border);
     padding:32px 24px;
-    margin-top:60px;
     text-align:center;
-  }
-  .site-footer p {
-    margin:8px 0;
     color:var(--muted);
-    font-size:14px;
   }
-  .site-footer a {
+  footer a {
     color:var(--accent);
     text-decoration:none;
-  }
-  .site-footer a:hover {
-    text-decoration:underline;
   }
 </style>
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -265,9 +257,8 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     </div>
   </div>
 
-  <footer class="site-footer">
-    <p>&copy; 2025 EnderBit. All rights reserved.</p>
-    <p>Email: <a href="mailto:support@enderbit.com">support@enderbit.com</a></p>
+  <footer>
+    <p>&copy; 2025 EnderBit. All rights reserved. | <a href="mailto:support@enderbit.com">support@enderbit.com</a> | <a href="/admin.php">Admin</a></p>
   </footer>
 
 <script>
