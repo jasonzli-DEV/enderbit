@@ -7,8 +7,16 @@ if (!isset($_SESSION['admin_logged_in'])) {
     header("Location: admin.php");
     exit;
 }
-
-// Deployment log file
+            // Compare versions
+            $isUpToDate = ($currentVersion === $latestVersion);
+            
+            $response['success'] = true;
+            
+            if ($isUpToDate) {
+                $response['message'] = "✅ Your site is up to date!";
+            } else {
+                $response['message'] = "🔔 Update available! Your site is out of date.";
+            }ment log file
 $logFile = __DIR__ . '/deployment.log';
 
 // Function to log deployment activities
