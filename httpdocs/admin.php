@@ -218,6 +218,9 @@ if (isset($_POST['approve_user'])) {
         <input type="password" name="admin_password" placeholder="Enter Password" required>
         <button type="submit" class="btn btn-primary">Login</button>
       </form>
+      <a href="index.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-top:10px;">
+        ← Return to Home
+      </a>
     <?php else: ?>
       <h1>Admin Panel</h1>
 
