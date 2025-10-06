@@ -166,13 +166,13 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </html>
 ";
 try {
-    // Try SMTP first
-    send_smtp_email($email, $emailSubject, $emailBody, $config['smtp']);
+    // Try SMTP first (use support email for tickets)
+    send_smtp_email($email, $emailSubject, $emailBody, $config['support_smtp']);
 } catch (Exception $e) {
     // Fallback to mail()
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: " . $config['smtp']['from_name'] . " <" . $config['smtp']['from_email'] . ">\r\n";
+    $headers .= "From: " . $config['support_smtp']['from_name'] . " <" . $config['support_smtp']['from_email'] . ">\r\n";
     
     if (!mail($email, $emailSubject, $emailBody, $headers)) {
         error_log("Failed to send ticket confirmation email to: {$email}");
@@ -181,7 +181,7 @@ try {
 }
 
 // Send notification to admin using SMTP
-$adminEmail = $config['smtp']['from_email'];
+$adminEmail = $config['support_smtp']['from_email'];
 $adminEmailSubject = "New Ticket Created: {$subject} [#{$ticketId}]";
 $adminEmailBody = "
 <!DOCTYPE html>
@@ -235,7 +235,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 
 try {
     // Try SMTP first for admin notification
-    send_smtp_email($adminEmail, $adminEmailSubject, $adminEmailBody, $config['smtp']);
+    send_smtp_email($adminEmail, $adminEmailSubject, $adminEmailBody, $config['support_smtp']);
 } catch (Exception $e) {
     // Fallback to mail() for admin
     $headers = "MIME-Version: 1.0\r\n";

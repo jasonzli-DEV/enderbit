@@ -161,7 +161,8 @@ if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) ==
 
 // Prepare email notifications
 $customerEmail = $ticketEmail;
-$adminEmail = $config['smtp']['from_email'];
+// Send notification to admin using SMTP
+$adminEmail = $config['support_smtp']['from_email'];
 
 // Build email subject and body based on action
 if ($wasOpenNowClosed) {
@@ -371,8 +372,8 @@ if ($isAdmin) {
 exit;
 
 function sendEmail($to, $subject, $body, $config) {
-    $from = $config['smtp']['from_email'];
-    $fromName = $config['smtp']['from_name'];
+    $from = $config['support_smtp']['from_email'];
+    $fromName = $config['support_smtp']['from_name'];
     
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
@@ -380,8 +381,8 @@ function sendEmail($to, $subject, $body, $config) {
     $headers .= "Reply-To: {$from}\r\n";
     
     // Try SMTP first
-    if ($config['smtp']['enabled']) {
-        $smtp = $config['smtp'];
+    if ($config['support_smtp']['enabled']) {
+        $smtp = $config['support_smtp'];
         $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
         
         if ($socket) {
