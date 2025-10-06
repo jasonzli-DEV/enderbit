@@ -115,10 +115,10 @@ $emailBody = "
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+.header { background: #1f6feb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
-.ticket-info { background: white; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; }
-.message-box { background: #f0fdf4; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; border-radius: 6px; }
+.ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
+.message-box { background: #fffbf5; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; border-radius: 6px; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>

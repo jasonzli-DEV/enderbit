@@ -31,7 +31,9 @@ foreach ($tickets as $t) {
 }
 
 if (!$ticket) {
-    header("Location: support.php?msg=" . urlencode("Ticket not found") . "&type=error");
+    header("Location: su            <option value="server_restart">🔄 Server Restart Instructions</option>
+            <option value="get_server">🖥️ Get a Server</option>
+            <option value="account_verified">✓ Account Verified</option>rt.php?msg=" . urlencode("Ticket not found") . "&type=error");
     exit;
 }
 
@@ -685,12 +687,28 @@ function format_user_time($datetime, $timezone) {
       </p>
       
       <!-- Display existing internal notes -->
-      <?php if (!empty($ticket['internal_notes']) && is_array($ticket['internal_notes'])): ?>
+      <?php 
+      // Collect all internal notes from tickets with the same email
+      $allNotes = [];
+      foreach ($tickets as $t) {
+        if ($t['email'] === $ticket['email'] && !empty($t['internal_notes']) && is_array($t['internal_notes'])) {
+          foreach ($t['internal_notes'] as $note) {
+            $note['ticket_id'] = $t['id']; // Add ticket ID to each note
+            $allNotes[] = $note;
+          }
+        }
+      }
+      // Sort notes by creation date (newest first)
+      usort($allNotes, function($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+      });
+      ?>
+      <?php if (!empty($allNotes)): ?>
         <div class="notes-list">
-          <?php foreach ($ticket['internal_notes'] as $note): ?>
+          <?php foreach ($allNotes as $note): ?>
             <div class="internal-note">
               <div class="note-header">
-                <span class="note-author">🔒 <?= htmlspecialchars($note['author'] ?? 'Admin') ?></span>
+                <span class="note-author">🔒 Ticket: <?= htmlspecialchars($note['ticket_id'] ?? 'Unknown') ?></span>
                 <span class="note-time"><?= htmlspecialchars(format_user_time($note['created_at'], $displayTimezone)) ?></span>
               </div>
               <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
@@ -842,9 +860,10 @@ const cannedResponses = {
 };
 
 function insertCannedResponse(template) {
+  const textarea = document.getElementById('reply-textarea');
+  const select = document.getElementById('canned-select');
+  
   if (template && cannedResponses[template]) {
-    const textarea = document.getElementById('reply-textarea');
-    const select = document.getElementById('canned-select');
     if (textarea) {
       // Replace textarea content with the selected template
       textarea.value = cannedResponses[template];
@@ -853,6 +872,13 @@ function insertCannedResponse(template) {
       // Focus textarea
       textarea.focus();
     }
+  } else if (!template && textarea) {
+    // Clear the form when "Select a template" is chosen
+    textarea.value = '';
+    if (select) {
+      select.value = '';
+    }
+    textarea.focus();
   }
 }
 

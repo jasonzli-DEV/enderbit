@@ -63,7 +63,7 @@ for ($i = 0; $i < count($tickets); $i++) {
             
             $tickets[$i]['internal_notes'][] = [
                 'note' => $internalNote,
-                'author' => 'Admin', // You can enhance this to track which admin
+                'ticket_id' => $ticketId, // Track which ticket the note was created in
                 'created_at' => date('Y-m-d H:i:s')
             ];
             
