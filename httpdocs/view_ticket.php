@@ -800,16 +800,36 @@ const cannedResponses = {
 function insertCannedResponse(template) {
   if (template && cannedResponses[template]) {
     const textarea = document.getElementById('reply-textarea');
+    const select = document.getElementById('canned-select');
     if (textarea) {
       // Replace textarea content with the selected template
       textarea.value = cannedResponses[template];
-      // Reset select dropdown
-      document.getElementById('canned-select').value = '';
+      // Keep the selection visible so admin knows which template is in use
+      select.value = template;
       // Focus textarea
       textarea.focus();
     }
   }
 }
+
+// Detect which canned response is currently in the textarea (if any)
+function detectCurrentCannedResponse() {
+  const textarea = document.getElementById('reply-textarea');
+  const select = document.getElementById('canned-select');
+  if (textarea && select) {
+    const currentText = textarea.value.trim();
+    // Check if current text matches any canned response
+    for (const [key, value] of Object.entries(cannedResponses)) {
+      if (currentText === value.trim()) {
+        select.value = key;
+        break;
+      }
+    }
+  }
+}
+
+// Run detection when page loads
+window.addEventListener('DOMContentLoaded', detectCurrentCannedResponse);
 </script>
 </body>
 </html>
