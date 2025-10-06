@@ -52,8 +52,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     position:sticky;
     top:0;
     z-index:1000;
-    backdrop-filter:blur(10px);
-    box-shadow:0 2px 10px var(--shadow);
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
   }
   nav .container {
     max-width:1200px;
@@ -68,20 +67,17 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     font-weight:700;
     color:var(--accent);
     text-decoration:none;
-    letter-spacing:-0.5px;
   }
   nav .nav-links {
     display:flex;
-    gap:32px;
+    gap:28px;
     align-items:center;
   }
   nav .nav-links a {
     color:var(--text);
     text-decoration:none;
     font-weight:500;
-    font-size:15px;
-    transition:all .2s;
-    position:relative;
+    transition:color .2s;
   }
   nav .nav-links a:hover { color:var(--accent); }
   nav .nav-links a.active { color:var(--accent); }
@@ -89,28 +85,32 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   /* Dropdown */
   nav .dropdown {
     position:relative;
+    display:inline-block;
   }
   nav .dropdown-content {
     display:none;
     position:absolute;
-    top:calc(100% + 8px);
+    top:100%;
     left:0;
     background:var(--card);
-    min-width:200px;
-    border-radius:12px;
-    box-shadow:0 8px 24px var(--shadow);
+    min-width:180px;
+    box-shadow:0 8px 16px rgba(0,0,0,.4);
     border:1px solid var(--input-border);
-    padding:8px;
+    border-radius:8px;
+    margin-top:0;
+    padding-top:8px;
     z-index:1000;
   }
   nav .dropdown-content a {
     display:block;
-    padding:10px 16px;
-    border-radius:8px;
+    padding:12px 20px;
+    text-decoration:none;
+    color:var(--text);
     transition:background .2s;
   }
   nav .dropdown-content a:hover {
     background:var(--input-bg);
+    color:var(--accent);
   }
   nav .dropdown:hover .dropdown-content {
     display:block;
@@ -118,17 +118,18 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   
   /* Theme Toggle */
   .theme-toggle {
-    background:var(--input-bg);
+    background:var(--card);
     border:1px solid var(--input-border);
     border-radius:8px;
-    padding:8px 12px;
-    font-size:16px;
+    padding:6px 10px;
+    font-size:14px;
     cursor:pointer;
     color:var(--text);
-    transition:all .2s;
-  }
-  .theme-toggle:hover {
-    background:var(--input-border);
+    vertical-align:middle;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
   }
 
   /* Main Content */
@@ -414,7 +415,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
             <li>24/7 expert support team</li>
             <li>Easy-to-use control panel</li>
             <li>99.9% uptime guarantee</li>
-            <li>Flexible pricing plans</li>
+            <li>Free services based on your needs</li>
           </ul>
         </div>
 
