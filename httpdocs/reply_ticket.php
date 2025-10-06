@@ -23,7 +23,7 @@ if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $
 
 // Validate input (allow empty message if just closing/reopening ticket or adding internal note)
 if (empty($ticketId) || (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket)) {
-    header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Message cannot be empty"));
+    header("Location: /ticket/$ticketId&msg=" . urlencode("Message cannot be empty"));
     exit;
 }
 
@@ -69,11 +69,11 @@ for ($i = 0; $i < count($tickets); $i++) {
             
             // Save and redirect immediately for internal notes (no email needed)
             if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
-                header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Internal note added successfully"));
+                header("Location: /ticket/$ticketId&msg=" . urlencode("Internal note added successfully"));
                 exit;
             } else {
                 error_log("Failed to save internal note");
-                header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Failed to save note. Please try again."));
+                header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save note. Please try again."));
                 exit;
             }
         }
@@ -155,7 +155,7 @@ if (!$ticketFound) {
 // Save tickets
 if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
     error_log("Failed to save ticket reply");
-    header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Failed to save reply. Please try again."));
+    header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save reply. Please try again."));
     exit;
 }
 
@@ -230,7 +230,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     </div>
     " : "") . "
     <p>If you need further assistance, you can reopen this ticket by visiting the ticket page and clicking the 'Reopen Ticket' button.</p>
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "//ticket/$ticketId' class='btn'>View Ticket</a>
     <p style='margin-top: 20px;'>Thank you for contacting EnderBit support!</p>
   </div>
   <div class='footer'>
@@ -271,7 +271,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       <p><strong>Status:</strong> Open</p>
       <p><strong>Reopened:</strong> " . date('F j, Y, g:i a') . "</p>
     </div>
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "//ticket/$ticketId' class='btn'>View Ticket</a>
     <p style='margin-top: 20px;'>Our support team will respond shortly.</p>
   </div>
   <div class='footer'>
@@ -324,7 +324,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       <p style='margin: 0;'><strong>💬 Want to respond?</strong> View the full ticket online to see all updates and continue the conversation with our support team.</p>
     </div>
 
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View Full Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "//ticket/$ticketId' class='btn'>View Full Ticket</a>
 
     <p style='margin-top: 20px;'>Thank you for your patience!</p>
   </div>
@@ -357,15 +357,15 @@ if ($isAdmin) {
     if ($wasOpenNowClosed) {
         header("Location: admin.php?msg=" . urlencode("Ticket closed successfully") . "&type=success");
     } elseif ($wasClosedNowReopened) {
-        header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Ticket reopened successfully") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully") . "&type=success");
     } else {
-        header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Reply sent successfully") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully") . "&type=success");
     }
 } else {
     if ($wasClosedNowReopened) {
-        header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
     } else {
-        header("Location: view_ticket.php?id={$ticketId}&msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
     }
 }
 exit;

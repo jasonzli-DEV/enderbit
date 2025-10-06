@@ -8,8 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $email = trim($_POST['email'] ?? '');
-$category = trim($_POST['category'] ?? 'other');
-$priority = trim($_POST['priority'] ?? 'medium');
+$category = trim($_POST['category'] ?? 'other}
+
+// Redirect to ticket page
+header("Location: /ticket/{$ticketId}?created=1");
+exit;
+riority = trim($_POST['priority'] ?? 'medium');
 $subject = trim($_POST['subject'] ?? '');
 $description = trim($_POST['description'] ?? '');
 
@@ -149,7 +153,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     <p><strong>💬 What happens next?</strong></p>
     <p>Our support team will review your ticket and respond via email. You can track all updates and add additional information by viewing your ticket online.</p>
 
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View & Track Your Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "/ticket/{$ticketId}' class='btn'>View & Track Your Ticket</a>
 
     <p style='margin-top: 20px;'>Thank you for contacting EnderBit support!</p>
   </div>
@@ -217,7 +221,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       <p style='margin-top: 12px;'>" . nl2br(htmlspecialchars($description)) . "</p>
     </div>
 
-    <a href='https://" . $_SERVER['HTTP_HOST'] . "/view_ticket.php?id={$ticketId}' class='btn'>View & Reply to Ticket</a>
+    <a href='https://" . $_SERVER['HTTP_HOST'] . "/ticket/{$ticketId}' class='btn'>View & Reply to Ticket</a>
     
     <p style='margin-top: 20px;'>Please respond to this ticket as soon as possible.</p>
   </div>

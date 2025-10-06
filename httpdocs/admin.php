@@ -409,7 +409,7 @@ if (isset($_POST['approve_user'])) {
                       </div>
 
                       <div style="margin-top:15px;">
-                        <a href="view_ticket.php?id=<?= $ticketId ?>" target="_blank" class="view-ticket-btn">View & Reply to Ticket</a>
+                        <a href="/ticket/<?= $ticketId ?>" target="_blank" class="view-ticket-btn">View & Reply to Ticket</a>
                       </div>
                     </div>
                     <?php

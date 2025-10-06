@@ -634,7 +634,7 @@ function format_user_time($datetime, $timezone) {
           <?php if (!empty($ticket['attachment'])): ?>
           <div class="attachment-box">
             <span>📎</span>
-            <a href="<?= htmlspecialchars($ticket['attachment']) ?>" target="_blank" download>
+            <a href="/image/<?= htmlspecialchars(basename($ticket['attachment'])) ?>" target="_blank">
               <?= htmlspecialchars(basename($ticket['attachment'])) ?>
             </a>
             <span style="color:var(--muted);font-size:13px;">(<?= number_format(filesize(__DIR__ . '/' . $ticket['attachment']) / 1024, 1) ?> KB)</span>
@@ -662,7 +662,7 @@ function format_user_time($datetime, $timezone) {
               <?php if (!empty($reply['attachment'])): ?>
               <div class="attachment-box">
                 <span>📎</span>
-                <a href="<?= htmlspecialchars($reply['attachment']) ?>" target="_blank" download>
+                <a href="/image/<?= htmlspecialchars(basename($reply['attachment'])) ?>" target="_blank">
                   <?= htmlspecialchars(basename($reply['attachment'])) ?>
                 </a>
                 <?php if (file_exists(__DIR__ . '/' . $reply['attachment'])): ?>
@@ -830,7 +830,7 @@ const cannedResponses = {
   
   server_restart: "Hello,\n\nTo resolve this issue, please try restarting your server:\n\n1. Log into your game panel\n2. Navigate to your server\n3. Click the 'Restart' button\n4. Wait 2-3 minutes for the server to fully restart\n\nIf the issue persists after restarting, please let us know and we'll investigate further.\n\nBest regards,\nEnderBit Support Team",
 
-  server_info: "Hello,\n\nRegarding your server inquiry:\n\nYour current plan: [Plan Name]If you have any questions about your server or would like to make changes to your plan, please let us know.\n\nBest regards,\nEnderBit Support Team",
+  billing_info: "Hello,\n\nTo get a server with EnderBit:\n\n1. Create a Support Ticket\n2. Select Get a Server\n3. Tell us your game type (Minecraft, Terraria, etc.)\n4. Choose your plan and configuration\n5. Click Submit Ticket\n\nYour server will be ready within 48 hours!\n\nIf you have any questions about pricing or plans, feel free to ask.\n\nBest regards,\nEnderBit Support Team",
 
   account_verified: "Hello,\n\nGood news! Your account has been successfully verified and approved.\n\nYou can now log in to your panel and start using our services:\n<?= htmlspecialchars($config['ptero_url'] ?? 'https://panel.enderbit.com') ?>\n\nIf you need any assistance getting started, feel free to reach out!\n\nWelcome to EnderBit!\n\nBest regards,\nEnderBit Support Team",
   
