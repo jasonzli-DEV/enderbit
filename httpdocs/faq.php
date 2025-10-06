@@ -77,7 +77,8 @@ require_once __DIR__ . '/config.php';
     box-shadow:0 8px 16px rgba(0,0,0,.4);
     border:1px solid var(--input-border);
     border-radius:8px;
-    margin-top:8px;
+    margin-top:0;
+    padding-top:8px;
     z-index:1000;
   }
   nav .nav-links .dropdown-content a {
@@ -98,6 +99,7 @@ require_once __DIR__ . '/config.php';
     display:flex;
     align-items:center;
     gap:4px;
+    padding-bottom:8px;
   }
 
   .theme-toggle {
@@ -401,14 +403,13 @@ require_once __DIR__ . '/config.php';
       <div class="faq-answer">
         <p>After logging into your panel:</p>
         <ol>
-          <li>Navigate to the <strong>Servers</strong> section</li>
-          <li>Click <strong>Create Server</strong></li>
-          <li>Choose your game type (Minecraft, Terraria, etc.)</li>
-          <li>Select your plan and configuration</li>
-          <li>Name your server</li>
-          <li>Click <strong>Create</strong> and wait for deployment</li>
+          <li>Create a Support Ticket</li>
+          <li>Select Get a Server</li>
+          <li>Tell us your game type (Minecraft, Terraria, etc.)</li>
+          <li>Choose your plan and configuration</li>
+          <li>Click <strong>Submit Ticket</strong></li>
         </ol>
-        <p>Your server will be ready in 1-2 minutes!</p>
+        <p>Your server will be ready within 48 hours!</p>
       </div>
     </div>
 

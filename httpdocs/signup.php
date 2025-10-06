@@ -192,7 +192,8 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     box-shadow:0 8px 16px rgba(0,0,0,.4);
     border:1px solid var(--input-border);
     border-radius:8px;
-    margin-top:8px;
+    margin-top:0;
+    padding-top:8px;
     z-index:1000;
   }
   nav .nav-links .dropdown-content a {
@@ -213,6 +214,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     display:flex;
     align-items:center;
     gap:4px;
+    padding-bottom:8px;
   }
   nav .nav-links a.active {
     color:var(--accent);

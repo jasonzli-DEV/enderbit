@@ -112,7 +112,8 @@ $justCreated = isset($_GET['created']);
     box-shadow:0 8px 16px rgba(0,0,0,.4);
     border:1px solid var(--input-border);
     border-radius:8px;
-    margin-top:8px;
+    margin-top:0;
+    padding-top:8px;
     z-index:1000;
   }
   nav .nav-links .dropdown-content a {
@@ -133,6 +134,7 @@ $justCreated = isset($_GET['created']);
     display:flex;
     align-items:center;
     gap:4px;
+    padding-bottom:8px;
   }
 
   /* Theme Toggle */
