@@ -206,6 +206,7 @@ function deleteDirectory($dir) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>System Update - EnderBit Admin</title>
+  <link rel="icon" type="image/png" sizes="96x96" href="/icon.png">
   <style>
   :root {
     --bg:#0d1117; --card:#161b22; --accent:#58a6ff; --primary:#1f6feb;
