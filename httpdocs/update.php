@@ -110,7 +110,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
             
-            // Step 4: Cleanup
+            // Step 4: Get latest commit SHA and update version file
+            logDeployment("📝 Updating version info...");
+            
+            $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/main";
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: EnderBit-Updater\r\n"
+                ]
+            ]);
+            
+            $commitData = @file_get_contents($apiUrl, false, $context);
+            if ($commitData !== false) {
+                $commit = json_decode($commitData, true);
+                $versionInfo = [
+                    'version' => substr($commit['sha'], 0, 7),
+                    'updated' => date('Y-m-d H:i:s')
+                ];
+                file_put_contents($targetDir . '/version.json', json_encode($versionInfo, JSON_PRETTY_PRINT));
+                logDeployment("✅ Version updated to: " . $versionInfo['version']);
+            }
+            
+            // Step 5: Cleanup
             unlink($tempZip);
             deleteDirectory($extractDir);
             
@@ -127,6 +148,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         case 'check':
             logDeployment("📊 Checking for updates");
+            
+            // Get current version
+            $versionFile = __DIR__ . '/version.json';
+            $currentVersion = 'unknown';
+            $currentDate = 'unknown';
+            
+            if (file_exists($versionFile)) {
+                $versionData = json_decode(file_get_contents($versionFile), true);
+                $currentVersion = $versionData['version'] ?? 'unknown';
+                $currentDate = $versionData['updated'] ?? 'unknown';
+            }
             
             // Get latest commit info from GitHub API
             $owner = 'jasonzli-DEV';
@@ -147,15 +179,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             $commit = json_decode($commitData, true);
+            $latestVersion = substr($commit['sha'], 0, 7);
+            $latestDate = date('Y-m-d H:i:s', strtotime($commit['commit']['author']['date']));
+            
+            // Compare versions
+            $isUpToDate = ($currentVersion === $latestVersion);
             
             $response['success'] = true;
-            $response['message'] = "📊 Latest Commit Info";
-            $response['log'] = "Commit: " . substr($commit['sha'], 0, 7) . "\n" .
-                              "Author: " . $commit['commit']['author']['name'] . "\n" .
-                              "Date: " . date('Y-m-d H:i:s', strtotime($commit['commit']['author']['date'])) . "\n" .
-                              "Message: " . $commit['commit']['message'];
             
-            logDeployment("✅ Check completed");
+            if ($isUpToDate) {
+                $response['message'] = "✅ Your site is up to date!";
+            } else {
+                $response['message'] = "� Update available! Your site is out of date.";
+            }
+            
+            $response['log'] = "═══════════════════════════════════\n" .
+                              "CURRENT VERSION\n" .
+                              "═══════════════════════════════════\n" .
+                              "Version: " . $currentVersion . "\n" .
+                              "Updated: " . $currentDate . "\n\n" .
+                              "═══════════════════════════════════\n" .
+                              "LATEST VERSION (GitHub)\n" .
+                              "═══════════════════════════════════\n" .
+                              "Version: " . $latestVersion . "\n" .
+                              "Date: " . $latestDate . "\n" .
+                              "Author: " . $commit['commit']['author']['name'] . "\n" .
+                              "Message: " . $commit['commit']['message'] . "\n\n" .
+                              "═══════════════════════════════════\n" .
+                              "STATUS\n" .
+                              "═══════════════════════════════════\n" .
+                              ($isUpToDate ? "✅ UP TO DATE - No updates needed" : "🔔 OUT OF DATE - Update available!");
+            
+            logDeployment("✅ Check completed - " . ($isUpToDate ? "Up to date" : "Update available"));
             break;
 
         case 'log':

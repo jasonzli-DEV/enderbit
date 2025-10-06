@@ -6,6 +6,7 @@ httpdocs/config.php
 httpdocs/tokens.json
 httpdocs/tickets.json
 httpdocs/settings.json
+httpdocs/version.json
 
 # Logs
 *.log
