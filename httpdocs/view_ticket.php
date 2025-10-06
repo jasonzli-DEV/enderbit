@@ -799,13 +799,8 @@ function insertCannedResponse(template) {
   if (template && cannedResponses[template]) {
     const textarea = document.getElementById('reply-textarea');
     if (textarea) {
-      // If textarea is empty, insert template
-      // If textarea has content, append template with line breaks
-      if (textarea.value.trim() === '') {
-        textarea.value = cannedResponses[template];
-      } else {
-        textarea.value += '\n\n' + cannedResponses[template];
-      }
+      // Replace textarea content with the selected template
+      textarea.value = cannedResponses[template];
       // Reset select dropdown
       document.getElementById('canned-select').value = '';
       // Focus textarea

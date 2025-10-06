@@ -243,8 +243,8 @@ require_once __DIR__ . '/config.php';
   <nav>
     <div class="container">
       <a href="/" class="logo">EnderBit</a>
-            <div class="nav-links">
-        <a href="/">Home</a>
+      <div class="nav-links">
+        <a href="/services.php">Services</a>
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <div class="dropdown">

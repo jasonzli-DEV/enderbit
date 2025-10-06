@@ -251,8 +251,8 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     <div class="container">
       <a href="/" class="logo">EnderBit</a>
             <div class="nav-links">
-        <a href="/">Home</a>
         <a href="/services.php">Services</a>
+        <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <div class="dropdown">
           <a href="#">Support ▼</a>

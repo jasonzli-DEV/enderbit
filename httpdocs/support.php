@@ -320,9 +320,9 @@ require_once __DIR__ . '/config.php';
         <a href="/signup.php">Sign Up</a>
         <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
         <div class="dropdown">
-          <a href="#" class="active">Support ▼</a>
+          <a href="#">Support ▼</a>
           <div class="dropdown-content">
-            <a href="/support.php" style="background:var(--input-bg);color:var(--accent);">🎫 Submit Ticket</a>
+            <a href="/support.php">🎫 Submit Ticket</a>
             <a href="/faq.php">📚 Knowledge Base</a>
           </div>
         </div>
