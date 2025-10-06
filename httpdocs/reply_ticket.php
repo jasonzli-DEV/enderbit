@@ -178,10 +178,10 @@ if ($wasOpenNowClosed) {
     $sendToCustomer = true;
     $sendToAdmin = true;
 } elseif ($isAdmin && !empty($replyMessage)) {
-    // Admin replied - notify customer and admin
+    // Admin replied - notify customer only (don't spam admin)
     $emailSubject = "New Reply on Your Ticket: {$ticketSubject} [#{$ticketId}]";
     $sendToCustomer = true;
-    $sendToAdmin = true;
+    $sendToAdmin = false;
 } elseif (!$isAdmin && !empty($replyMessage)) {
     // Customer replied - notify admin only
     $emailSubject = "Customer Reply on Ticket: {$ticketSubject} [#{$ticketId}]";
