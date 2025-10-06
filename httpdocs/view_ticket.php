@@ -59,7 +59,7 @@ function format_user_time($datetime, $timezone) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Ticket <?= htmlspecialchars($ticket['id']) ?> - EnderBit Support</title>
+<title><?= htmlspecialchars($ticket['subject']) ?> - EnderBit Support</title>
 <link rel="icon" type="image/png" sizes="96x96" href="/icon.png">
 <style>
   :root {

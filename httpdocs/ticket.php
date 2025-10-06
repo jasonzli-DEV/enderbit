@@ -20,6 +20,7 @@ if (empty($ticketId) || !preg_match('/^TICKET-[A-Za-z0-9]+$/', $ticketId)) {
     die("Invalid ticket ID");
 }
 
-// Redirect to the actual view_ticket.php page
-header("Location: /view_ticket.php?id=" . urlencode($ticketId));
+// Include view_ticket.php to display the ticket with clean URL
+$_GET['id'] = $ticketId;
+include __DIR__ . '/view_ticket.php';
 exit;

@@ -365,8 +365,9 @@ if (isset($_POST['approve_user'])) {
                     // Check if there's a client response (last reply is not from admin)
                     $hasClientResponse = false;
                     if (!empty($ticket['replies']) && is_array($ticket['replies'])) {
-                        $lastReply = end($ticket['replies']);
-                        if (isset($lastReply['is_admin']) && !$lastReply['is_admin']) {
+                        $repliesCopy = $ticket['replies'];
+                        $lastReply = end($repliesCopy);
+                        if (isset($lastReply['is_admin']) && $lastReply['is_admin'] === false) {
                             $hasClientResponse = true;
                         }
                     }
