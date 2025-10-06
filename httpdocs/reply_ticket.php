@@ -5,11 +5,9 @@ require_once __DIR__ . '/config.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: support.php");
     exit;
-}if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
-    error_log("Failed to save ticket after adding reply");
-    header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save reply. Please try again."));
-    exit;
-}cketId = trim($_POST['ticket_id'] ?? '');
+}
+
+$ticketId = trim($_POST['ticket_id'] ?? '');
 $replyMessage = trim($_POST['reply_message'] ?? '');
 $isAdmin = isset($_POST['is_admin']) && $_POST['is_admin'] === '1';
 $closeTicket = isset($_POST['close_ticket']) && $_POST['close_ticket'] === '1';
@@ -157,7 +155,7 @@ if (!$ticketFound) {
 // Save tickets
 if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
     error_log("Failed to save ticket reply");
-    header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save reply. Please try again."));
+    header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save reply. Please try again."));
     exit;
 }
 
