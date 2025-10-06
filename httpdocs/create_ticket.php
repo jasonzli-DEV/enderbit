@@ -8,12 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $email = trim($_POST['email'] ?? '');
-$category = trim($_POST['category'] ?? 'other}
-
-// Redirect to ticket page
-header("Location: /ticket/{$ticketId}?created=1");
-exit;
-riority = trim($_POST['priority'] ?? 'medium');
+$category = trim($_POST['category'] ?? 'other');
+$priority = trim($_POST['priority'] ?? 'medium');
 $subject = trim($_POST['subject'] ?? '');
 $description = trim($_POST['description'] ?? '');
 

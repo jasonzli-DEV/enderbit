@@ -134,11 +134,11 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
 
   /* Main Content */
   .main-wrapper {
-    min-height:calc(100vh - 180px);
+    min-height:calc(100vh - 140px);
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:40px 20px;
+    padding:20px;
   }
 
   .signup-container {
@@ -149,6 +149,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     box-shadow:0 20px 60px var(--shadow);
     overflow:hidden;
     border:1px solid var(--input-border);
+    margin:auto;
   }
 
   .signup-grid {
@@ -160,7 +161,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   /* Left Side - Info */
   .signup-info {
     background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
-    padding:60px 50px;
+    padding:40px;
     color:#fff;
     display:flex;
     flex-direction:column;
@@ -168,18 +169,18 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   }
 
   .signup-info h1 {
-    font-size:42px;
+    font-size:36px;
     font-weight:800;
-    margin-bottom:20px;
+    margin-bottom:16px;
     line-height:1.2;
     letter-spacing:-1px;
   }
 
   .signup-info p {
-    font-size:18px;
+    font-size:16px;
     line-height:1.6;
     opacity:0.95;
-    margin-bottom:40px;
+    margin-bottom:30px;
   }
 
   .feature-list {
@@ -205,42 +206,42 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
 
   /* Right Side - Form */
   .signup-form {
-    padding:60px 50px;
+    padding:40px;
   }
 
   .signup-form h2 {
-    font-size:28px;
+    font-size:26px;
     font-weight:700;
-    margin-bottom:10px;
+    margin-bottom:8px;
     color:var(--text);
   }
 
   .signup-form .subtitle {
     color:var(--muted);
-    margin-bottom:32px;
-    font-size:15px;
+    margin-bottom:24px;
+    font-size:14px;
   }
 
   .form-group {
-    margin-bottom:20px;
+    margin-bottom:16px;
   }
 
   .form-group label {
     display:block;
-    font-size:14px;
+    font-size:13px;
     font-weight:600;
-    margin-bottom:8px;
+    margin-bottom:6px;
     color:var(--text);
   }
 
   .form-group input {
     width:100%;
-    padding:14px 16px;
+    padding:12px 14px;
     border-radius:10px;
     border:2px solid var(--input-border);
     background:var(--input-bg);
     color:var(--text);
-    font-size:15px;
+    font-size:14px;
     transition:all .2s;
   }
 
@@ -259,15 +260,15 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   .recaptcha-wrapper {
     display:flex;
     justify-content:center;
-    margin:24px 0;
+    margin:20px 0;
   }
 
   .btn {
     width:100%;
-    padding:16px;
+    padding:14px;
     border-radius:10px;
     font-weight:600;
-    font-size:16px;
+    font-size:15px;
     text-align:center;
     cursor:pointer;
     border:none;
@@ -277,7 +278,7 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
   .btn-primary {
     background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
     color:#fff;
-    margin-bottom:12px;
+    margin-bottom:10px;
   }
 
   .btn-primary:hover {
@@ -358,13 +359,13 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
       grid-template-columns:1fr;
     }
     .signup-info {
-      padding:40px 30px;
+      padding:30px 24px;
     }
     .signup-info h1 {
-      font-size:32px;
+      font-size:28px;
     }
     .signup-form {
-      padding:40px 30px;
+      padding:30px 24px;
     }
     .form-row {
       grid-template-columns:1fr;
@@ -372,6 +373,9 @@ $type = $_GET['type'] ?? ''; // 'success' or 'error'
     nav .nav-links {
       gap:20px;
       font-size:14px;
+    }
+    .main-wrapper {
+      padding:10px;
     }
   }
 </style>
