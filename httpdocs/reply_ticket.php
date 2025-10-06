@@ -15,10 +15,6 @@ $reopenTicket = isset($_POST['reopen_ticket']) && $_POST['reopen_ticket'] === '1
 $addInternalNote = isset($_POST['add_internal_note']) && $_POST['add_internal_note'] === '1';
 $internalNote = trim($_POST['internal_note'] ?? '');
 
-// Log the received ticket_id for debugging
-error_log("reply_ticket.php - Received ticket_id: '" . $ticketId . "' (length: " . strlen($ticketId) . ")");
-error_log("reply_ticket.php - POST data: " . print_r($_POST, true));
-
 // Validate admin for admin actions
 if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
     header("Location: admin.php");
@@ -26,14 +22,8 @@ if (($isAdmin || $addInternalNote) && (!isset($_SESSION['admin_logged_in']) || $
 }
 
 // Validate input (allow empty message if just closing/reopening ticket or adding internal note)
-if (empty($ticketId)) {
-    error_log("reply_ticket.php - ERROR: Empty ticket_id received");
-    header("Location: support.php?msg=" . urlencode("Invalid ticket ID") . "&type=error");
-    exit;
-}
-
-if (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket) {
-    header("Location: /ticket/$ticketId?msg=" . urlencode("Message cannot be empty"));
+if (empty($ticketId) || (empty($replyMessage) && empty($internalNote) && !$closeTicket && !$reopenTicket)) {
+    header("Location: /ticket/$ticketId&msg=" . urlencode("Message cannot be empty"));
     exit;
 }
 
@@ -73,17 +63,17 @@ for ($i = 0; $i < count($tickets); $i++) {
             
             $tickets[$i]['internal_notes'][] = [
                 'note' => $internalNote,
-                'ticket_id' => $ticketId, // Track which ticket the note was created in
+                'author' => 'Admin', // You can enhance this to track which admin
                 'created_at' => date('Y-m-d H:i:s')
             ];
             
             // Save and redirect immediately for internal notes (no email needed)
             if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
-                header("Location: /ticket/$ticketId?msg=" . urlencode("Internal note added successfully"));
+                header("Location: /ticket/$ticketId&msg=" . urlencode("Internal note added successfully"));
                 exit;
             } else {
                 error_log("Failed to save internal note");
-                header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save note. Please try again."));
+                header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save note. Please try again."));
                 exit;
             }
         }
@@ -165,7 +155,7 @@ if (!$ticketFound) {
 // Save tickets
 if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
     error_log("Failed to save ticket reply");
-    header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save reply. Please try again."));
+    header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save reply. Please try again."));
     exit;
 }
 
@@ -188,10 +178,10 @@ if ($wasOpenNowClosed) {
     $sendToCustomer = true;
     $sendToAdmin = true;
 } elseif ($isAdmin && !empty($replyMessage)) {
-    // Admin replied - notify customer only (not admin)
+    // Admin replied - notify customer and admin
     $emailSubject = "New Reply on Your Ticket: {$ticketSubject} [#{$ticketId}]";
     $sendToCustomer = true;
-    $sendToAdmin = false;
+    $sendToAdmin = true;
 } elseif (!$isAdmin && !empty($replyMessage)) {
     // Customer replied - notify admin only
     $emailSubject = "Customer Reply on Ticket: {$ticketSubject} [#{$ticketId}]";
@@ -260,9 +250,9 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: #1f6feb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+.header { background: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
-.ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
+.ticket-info { background: white; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>
@@ -368,15 +358,15 @@ if ($isAdmin) {
     if ($wasOpenNowClosed) {
         header("Location: admin.php?msg=" . urlencode("Ticket closed successfully") . "&type=success");
     } elseif ($wasClosedNowReopened) {
-        header("Location: /ticket/$ticketId?msg=" . urlencode("Ticket reopened successfully") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully") . "&type=success");
     } else {
-        header("Location: /ticket/$ticketId?msg=" . urlencode("Reply sent successfully") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully") . "&type=success");
     }
 } else {
     if ($wasClosedNowReopened) {
-        header("Location: /ticket/$ticketId?msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Ticket reopened successfully. Our team will respond shortly.") . "&type=success");
     } else {
-        header("Location: /ticket/$ticketId?msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
+        header("Location: /ticket/$ticketId&msg=" . urlencode("Reply sent successfully. Our team will respond shortly.") . "&type=success");
     }
 }
 exit;
@@ -391,8 +381,8 @@ function sendEmail($to, $subject, $body, $config) {
     $headers .= "Reply-To: {$from}\r\n";
     
     // Try SMTP first
-    $smtp = $config['support_smtp'];
-    if (!empty($smtp['host']) && !empty($smtp['port'])) {
+    if ($config['support_smtp']['enabled']) {
+        $smtp = $config['support_smtp'];
         $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
         
         if ($socket) {

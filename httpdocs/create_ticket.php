@@ -8,8 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $email = trim($_POST['email'] ?? '');
-$category = trim($_POST['category'] ?? 'other');
-$priority = trim($_POST['priority'] ?? 'medium');
+$category = trim($_POST['category'] ?? 'other}
+
+// Redirect to ticket page
+header("Location: /ticket/{$ticketId}?created=1");
+exit;
+riority = trim($_POST['priority'] ?? 'medium');
 $subject = trim($_POST['subject'] ?? '');
 $description = trim($_POST['description'] ?? '');
 
@@ -115,10 +119,10 @@ $emailBody = "
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: #1f6feb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+.header { background: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
-.ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
-.message-box { background: #fffbf5; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; border-radius: 6px; }
+.ticket-info { background: white; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; }
+.message-box { background: #f0fdf4; padding: 20px; border-left: 4px solid #16a34a; margin: 20px 0; border-radius: 6px; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>
@@ -163,60 +167,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 ";
 try {
     // Try SMTP first (use support email for tickets)
-    $from = $config['support_smtp']['from_email'];
-    $fromName = $config['support_smtp']['from_name'];
-    $smtp = $config['support_smtp'];
-    
-    if (!empty($smtp['host']) && !empty($smtp['port'])) {
-        $socket = @fsockopen($smtp['host'], $smtp['port'], $errno, $errstr, 10);
-        
-        if ($socket) {
-            $response = fgets($socket);
-            fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-            $response = fgets($socket);
-            
-            if ($smtp['port'] == 587) {
-                fwrite($socket, "STARTTLS\r\n");
-                $response = fgets($socket);
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                fwrite($socket, "EHLO " . $smtp['host'] . "\r\n");
-                $response = fgets($socket);
-            }
-            
-            fwrite($socket, "AUTH LOGIN\r\n");
-            $response = fgets($socket);
-            fwrite($socket, base64_encode($smtp['username']) . "\r\n");
-            $response = fgets($socket);
-            fwrite($socket, base64_encode($smtp['password']) . "\r\n");
-            $response = fgets($socket);
-            
-            fwrite($socket, "MAIL FROM: <{$from}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "RCPT TO: <{$email}>\r\n");
-            $response = fgets($socket);
-            fwrite($socket, "DATA\r\n");
-            $response = fgets($socket);
-            
-            $emailContent = "From: {$fromName} <{$from}>\r\n";
-            $emailContent .= "To: {$email}\r\n";
-            $emailContent .= "Subject: {$emailSubject}\r\n";
-            $emailContent .= "MIME-Version: 1.0\r\n";
-            $emailContent .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $emailContent .= "\r\n";
-            $emailContent .= $emailBody;
-            $emailContent .= "\r\n.\r\n";
-            
-            fwrite($socket, $emailContent);
-            $response = fgets($socket);
-            
-            fwrite($socket, "QUIT\r\n");
-            fclose($socket);
-        } else {
-            throw new Exception("SMTP connection failed");
-        }
-    } else {
-        throw new Exception("SMTP not enabled");
-    }
+    send_smtp_email($email, $emailSubject, $emailBody, $config['support_smtp']);
 } catch (Exception $e) {
     // Fallback to mail()
     $headers = "MIME-Version: 1.0\r\n";
@@ -239,10 +190,10 @@ $adminEmailBody = "
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: #1f6feb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+.header { background: #f0883e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
 .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
 .ticket-info { background: white; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; }
-.message-box { background: #fffbf5; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; border-radius: 6px; }
+.message-box { background: #fff5f0; padding: 20px; border-left: 4px solid #f0883e; margin: 20px 0; border-radius: 6px; }
 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
 .btn { display: inline-block; padding: 12px 24px; background: #1f6feb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
 </style>

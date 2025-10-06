@@ -361,27 +361,11 @@ if (isset($_POST['approve_user'])) {
                 foreach ($tickets as $ticket) {
                     $ticketId = htmlspecialchars($ticket['id']);
                     $replyCount = isset($ticket['replies']) ? count($ticket['replies']) : 0;
-                    
-                    // Check if there's a client response (last reply is not from admin)
-                    $hasClientResponse = false;
-                    if (!empty($ticket['replies']) && is_array($ticket['replies'])) {
-                        $repliesCopy = $ticket['replies'];
-                        $lastReply = end($repliesCopy);
-                        if (isset($lastReply['is_admin']) && $lastReply['is_admin'] === false) {
-                            $hasClientResponse = true;
-                        }
-                    }
-                    
-                    // Build ticket title
-                    $ticketTitle = htmlspecialchars($ticket['subject']);
-                    if ($hasClientResponse) {
-                        $ticketTitle .= ' - Client Response';
-                    }
                     ?>
                     <div class="ticket-card" id="ticket-<?= $ticketId ?>">
                       <div class="ticket-header">
                         <div>
-                          <div class="ticket-title">🎫 <?= $ticketTitle ?></div>
+                          <div class="ticket-title">🎫 <?= htmlspecialchars($ticket['subject']) ?></div>
                           <div class="ticket-meta">
                             ID: <strong><?= $ticketId ?></strong> | 
                             <?php if (!empty($ticket['category'])): ?>

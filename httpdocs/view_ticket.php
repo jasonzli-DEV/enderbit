@@ -37,8 +37,6 @@ if (!$ticket) {
 
 $justCreated = isset($_GET['created']);
 
-$justCreated = isset($_GET['created']);
-
 // Get timezone for displaying times
 $displayTimezone = $ticket['user_timezone'] ?? 'America/New_York';
 
@@ -59,7 +57,7 @@ function format_user_time($datetime, $timezone) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title><?= htmlspecialchars($ticket['subject']) ?> - EnderBit Support</title>
+<title>Ticket <?= htmlspecialchars($ticket['id']) ?> - EnderBit Support</title>
 <link rel="icon" type="image/png" sizes="96x96" href="/icon.png">
 <style>
   :root {
@@ -687,28 +685,12 @@ function format_user_time($datetime, $timezone) {
       </p>
       
       <!-- Display existing internal notes -->
-      <?php 
-      // Collect all internal notes from tickets with the same email
-      $allNotes = [];
-      foreach ($tickets as $t) {
-        if ($t['email'] === $ticket['email'] && !empty($t['internal_notes']) && is_array($t['internal_notes'])) {
-          foreach ($t['internal_notes'] as $note) {
-            $note['ticket_id'] = $t['id']; // Add ticket ID to each note
-            $allNotes[] = $note;
-          }
-        }
-      }
-      // Sort notes by creation date (newest first)
-      usort($allNotes, function($a, $b) {
-        return strtotime($b['created_at']) - strtotime($a['created_at']);
-      });
-      ?>
-      <?php if (!empty($allNotes)): ?>
+      <?php if (!empty($ticket['internal_notes']) && is_array($ticket['internal_notes'])): ?>
         <div class="notes-list">
-          <?php foreach ($allNotes as $note): ?>
+          <?php foreach ($ticket['internal_notes'] as $note): ?>
             <div class="internal-note">
               <div class="note-header">
-                <span class="note-author">🔒 <?= htmlspecialchars($note['ticket_id'] ?? 'Unknown') ?></span>
+                <span class="note-author">🔒 <?= htmlspecialchars($note['author'] ?? 'Admin') ?></span>
                 <span class="note-time"><?= htmlspecialchars(format_user_time($note['created_at'], $displayTimezone)) ?></span>
               </div>
               <div class="note-content"><?= nl2br(htmlspecialchars($note['note'])) ?></div>
@@ -750,7 +732,7 @@ function format_user_time($datetime, $timezone) {
             <option value="need_more_info">ℹ️ Need More Information</option>
             <option value="resolved">✅ Issue Resolved</option>
             <option value="server_restart">🔄 Server Restart Instructions</option>
-            <option value="get_server">🖥️ Get a Server</option>
+            <option value="get_server">�️ Get a Server</option>
             <option value="account_verified">✓ Account Verified</option>
             <option value="feature_request">✨ Feature Request Response</option>
             <option value="apologize">🙏 Apologize for Inconvenience</option>
@@ -860,10 +842,9 @@ const cannedResponses = {
 };
 
 function insertCannedResponse(template) {
-  const textarea = document.getElementById('reply-textarea');
-  const select = document.getElementById('canned-select');
-  
   if (template && cannedResponses[template]) {
+    const textarea = document.getElementById('reply-textarea');
+    const select = document.getElementById('canned-select');
     if (textarea) {
       // Replace textarea content with the selected template
       textarea.value = cannedResponses[template];
@@ -872,13 +853,6 @@ function insertCannedResponse(template) {
       // Focus textarea
       textarea.focus();
     }
-  } else if (!template && textarea) {
-    // Clear the form when "Select a template" is chosen
-    textarea.value = '';
-    if (select) {
-      select.value = '';
-    }
-    textarea.focus();
   }
 }
 
