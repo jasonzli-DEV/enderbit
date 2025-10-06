@@ -149,8 +149,8 @@ if (isset($_POST['approve_user'])) {
         <label><input type="checkbox" name="require_email_verify" <?= !empty($settings['require_email_verify']) ? 'checked':'' ?>> Require Email Verification</label>
         <label><input type="checkbox" name="require_admin_approve" <?= !empty($settings['require_admin_approve']) ? 'checked':'' ?>> Require Admin Approval</label>
 
+        <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">🔄 Pull Latest Updates</a>
         <button type="submit" name="save_exit" class="btn btn-primary">Save and Exit</button>
-        <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-top:10px;">🔄 Pull Latest Updates</a>
         <button type="submit" name="logout" class="btn btn-danger">Logout</button>
       </form>
 
