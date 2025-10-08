@@ -284,16 +284,74 @@ if (isset($_POST['approve_user'])) {
           }
       }
       
-      $totalTickets = 0;
+      // Ticket statistics
       $openTickets = 0;
-      $closedTickets = 0;
       if (file_exists($ticketsFile)) {
           $tickets = json_decode(file_get_contents($ticketsFile), true);
           if (is_array($tickets)) {
-              $totalTickets = count($tickets);
               foreach ($tickets as $ticket) {
                   if ($ticket['status'] === 'open') $openTickets++;
-                  if ($ticket['status'] === 'closed') $closedTickets++;
+              }
+          }
+      }
+      
+      // Get last backup info
+      $lastBackupTime = 'Never';
+      $backupMetadataFile = __DIR__ . '/backups/metadata.json';
+      if (file_exists($backupMetadataFile)) {
+          $metadata = json_decode(file_get_contents($backupMetadataFile), true);
+          if (isset($metadata['sets']) && !empty($metadata['sets'])) {
+              $latestBackup = null;
+              $latestTime = 0;
+              foreach ($metadata['sets'] as $set) {
+                  if ($set['created'] > $latestTime) {
+                      $latestTime = $set['created'];
+                      $latestBackup = $set;
+                  }
+              }
+              if ($latestBackup) {
+                  $timeDiff = time() - $latestBackup['created'];
+                  if ($timeDiff < 3600) {
+                      $lastBackupTime = floor($timeDiff / 60) . 'm ago';
+                  } elseif ($timeDiff < 86400) {
+                      $lastBackupTime = floor($timeDiff / 3600) . 'h ago';
+                  } else {
+                      $lastBackupTime = floor($timeDiff / 86400) . 'd ago';
+                  }
+              }
+          }
+      }
+      
+      // Count today's activity (tickets + registrations)
+      $todayActivity = 0;
+      if (file_exists($ticketsFile)) {
+          $tickets = json_decode(file_get_contents($ticketsFile), true);
+          if (is_array($tickets)) {
+              $today = date('Y-m-d');
+              foreach ($tickets as $ticket) {
+                  if (isset($ticket['created_at']) && strpos($ticket['created_at'], $today) === 0) {
+                      $todayActivity++;
+                  }
+              }
+          }
+      }
+      
+      // Check for security events in last 24 hours
+      $securityAlerts = 0;
+      $securityLogFile = __DIR__ . '/security.log';
+      if (file_exists($securityLogFile)) {
+          $lines = file($securityLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+          $yesterday = time() - 86400;
+          foreach ($lines as $line) {
+              if (strpos($line, '"type":"SECURITY"') !== false) {
+                  // Parse the JSON to check timestamp
+                  $logEntry = json_decode($line, true);
+                  if ($logEntry && isset($logEntry['timestamp'])) {
+                      $logTime = strtotime($logEntry['timestamp']);
+                      if ($logTime >= $yesterday) {
+                          $securityAlerts++;
+                      }
+                  }
               }
           }
       }
@@ -311,9 +369,9 @@ if (isset($_POST['approve_user'])) {
       <!-- Statistics Overview -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon">📊</div>
-          <div class="stat-label">Total Tickets</div>
-          <div class="stat-value"><?= $totalTickets ?></div>
+          <div class="stat-icon">�</div>
+          <div class="stat-label">Last Backup</div>
+          <div class="stat-value" style="font-size:20px;"><?= htmlspecialchars($lastBackupTime) ?></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">🟢</div>
@@ -321,14 +379,14 @@ if (isset($_POST['approve_user'])) {
           <div class="stat-value" style="color:#22c55e;"><?= $openTickets ?></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">🔴</div>
-          <div class="stat-label">Closed Tickets</div>
-          <div class="stat-value" style="color:#ef4444;"><?= $closedTickets ?></div>
+          <div class="stat-icon">�</div>
+          <div class="stat-label">Today's Activity</div>
+          <div class="stat-value" style="color:#3b82f6;"><?= $todayActivity ?></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">👥</div>
-          <div class="stat-label">Pending Users</div>
-          <div class="stat-value" style="color:#f59e0b;"><?= $pendingUsers ?></div>
+          <div class="stat-icon">�️</div>
+          <div class="stat-label">Security Alerts (24h)</div>
+          <div class="stat-value" style="color:<?= $securityAlerts > 0 ? '#ef4444' : '#22c55e' ?>;"><?= $securityAlerts ?></div>
         </div>
       </div>
 
