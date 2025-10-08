@@ -2,18 +2,7 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
-
-// Helper function to format datetime in user's timezone
-function format_user_time($datetime, $timezone) {
-    try {
-        $dt = new DateTime($datetime, new DateTimeZone('UTC'));
-        $dt->setTimezone(new DateTimeZone($timezone));
-        return $dt->format('M j, Y, g:i A') . ' ' . $dt->format('T');
-    } catch (Exception $e) {
-        // Fallback to original formatting
-        return date('M j, Y, g:i A', strtotime($datetime));
-    }
-}
+require_once __DIR__ . '/timezone_utils.php';
 
 // Function to check if updates are available
 function checkForUpdates() {

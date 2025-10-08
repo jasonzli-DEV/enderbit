@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
+require_once __DIR__ . '/timezone_utils.php';
 
 // Check admin authentication
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -423,7 +424,12 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
 
     <div class="header">
       <h1>📋 System Logs</h1>
-      <a href="/admin.php" class="btn btn-secondary">← Back to Admin</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:var(--text-secondary);padding:6px 12px;background:var(--input-bg);border-radius:6px;">
+          🌍 Your timezone: <?= getTimezoneAbbr() ?> (<?= getTimezoneOffset() ?>)
+        </span>
+        <a href="/admin.php" class="btn btn-secondary">← Back to Admin</a>
+      </div>
     </div>
 
     <!-- Log Statistics -->
@@ -496,7 +502,7 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
             <?php foreach ($logEntries as $entry): ?>
               <div class="log-entry">
                 <div class="log-header">
-                  <span class="log-timestamp"><?= htmlspecialchars($entry['timestamp']) ?></span>
+                  <span class="log-timestamp"><?= htmlspecialchars(formatDateTimeInUserTZ($entry['timestamp'], 'M j, Y g:i:s A')) ?> <span style="font-size:10px;color:var(--text-secondary);">(<?= getTimezoneAbbr() ?>)</span></span>
                   <span class="log-type <?= htmlspecialchars($entry['type']) ?>"><?= htmlspecialchars($entry['type']) ?></span>
                 </div>
                 <div class="log-event"><?= htmlspecialchars($entry['event']) ?></div>

@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
+require_once __DIR__ . '/timezone_utils.php';
 
 // Check admin authentication
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -621,7 +622,10 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
   <div class="page">
     <div class="header">
       <h1>💾 Backup Management</h1>
-      <div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:var(--text-secondary);padding:6px 12px;background:var(--input-bg);border-radius:6px;">
+          🌍 Your timezone: <?= getTimezoneAbbr() ?> (<?= getTimezoneOffset() ?>)
+        </span>
         <a href="/admin.php" class="btn btn-secondary">← Back to Admin Panel</a>
       </div>
     </div>
@@ -694,13 +698,13 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
         <?php foreach ($backupSets as $set): ?>
           <div class="backup-set-card">
             <div class="backup-time">
-              <?= date('g:i A', $set['created']) ?>
+              <?= formatTimeInUserTZ($set['created'], 'g:i A') ?>
               <?php if (($set['type'] ?? 'json') === 'full'): ?>
                 <span style="background:var(--primary);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px;">FULL</span>
               <?php endif; ?>
             </div>
             <div class="backup-date">
-              <?= date('l, F j, Y', $set['created']) ?>
+              <?= formatTimeInUserTZ($set['created'], 'l, F j, Y') ?>
             </div>
             
             <div class="backup-description" id="desc-<?= md5($set['timestamp']) ?>">

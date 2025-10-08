@@ -2,22 +2,12 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
+require_once __DIR__ . '/timezone_utils.php';
 
 // Check admin authentication
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: admin.php");
     exit;
-}
-
-// Helper function to format datetime in user's timezone
-function format_user_time($datetime, $timezone) {
-    try {
-        $dt = new DateTime($datetime, new DateTimeZone('UTC'));
-        $dt->setTimezone(new DateTimeZone($timezone));
-        return $dt->format('M j, Y, g:i A') . ' ' . $dt->format('T');
-    } catch (Exception $e) {
-        return date('M j, Y, g:i A', strtotime($datetime));
-    }
 }
 
 $msg = $_GET['msg'] ?? '';
@@ -133,7 +123,12 @@ if (file_exists($ticketsFile)) {
   <div class="page">
     <div class="container">
       <div class="page-header">
-        <h1>🎫 Ticket Management</h1>
+        <div>
+          <h1>🎫 Ticket Management</h1>
+          <span style="font-size:13px;color:var(--text-secondary);margin-top:4px;display:inline-block;">
+            🌍 Showing times in your timezone: <?= getTimezoneAbbr() ?> (<?= getTimezoneOffset() ?>)
+          </span>
+        </div>
         <a href="/admin.php" class="btn btn-secondary">← Back to Admin Panel</a>
       </div>
 
@@ -229,7 +224,7 @@ if (file_exists($ticketsFile)) {
                               ?>
                             <?php endif; ?>
                             From: <strong><?= htmlspecialchars($ticket['email']) ?></strong> | 
-                            Created: <?= htmlspecialchars(format_user_time($ticket['created_at'], $ticket['user_timezone'] ?? 'America/New_York')) ?> | 
+                            Created: <?= htmlspecialchars(formatDateTimeInUserTZ($ticket['created_at'], 'M j, Y, g:i A')) ?> <span style="color:var(--text-secondary);font-size:11px;">(<?= getTimezoneAbbr() ?>)</span> | 
                             <?php if ($replyCount > 0): ?>💬 <strong><?= $replyCount ?></strong> replies<?php endif; ?>
                             <?php if (!empty($ticket['attachment'])): ?> | 📎 Attachment<?php endif; ?>
                           </div>
