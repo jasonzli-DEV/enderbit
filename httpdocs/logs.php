@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Start output buffering to allow cookies to be set
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
