@@ -77,7 +77,7 @@ function checkScheduledBackup() {
 }
 
 // Perform backup
-function performBackup($description = '') {
+function performBackup($description = '', $fullBackup = false) {
     global $backupDir;
     
     if (!is_dir($backupDir)) {
@@ -86,56 +86,127 @@ function performBackup($description = '') {
     
     $timestamp = date('Y-m-d_H-i-s');
     $backupFiles = [];
-    $jsonFiles = ['tokens.json', 'tickets.json', 'settings.json'];
+    $skippedFiles = [];
     $metadata = loadMetadata();
     
-    foreach ($jsonFiles as $file) {
-        $filePath = __DIR__ . '/' . $file;
-        if (file_exists($filePath)) {
-            $fileType = pathinfo($file, PATHINFO_FILENAME);
-            $backupFileName = $fileType . '_' . $timestamp . '.json';
-            $backupPath = $backupDir . '/' . $backupFileName;
-            if (copy($filePath, $backupPath)) {
-                $backupFiles[] = $backupFileName;
-                
-                // Store metadata for individual file
-                $metadata[$backupFileName] = [
-                    'timestamp' => $timestamp,
-                    'created' => time(),
-                    'type' => $fileType
-                ];
+    if ($fullBackup) {
+        // Full system backup - create a ZIP file
+        $zipFileName = 'full_backup_' . $timestamp . '.zip';
+        $zipPath = $backupDir . '/' . $zipFileName;
+        $zip = new ZipArchive();
+        
+        if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator(__DIR__),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
+            
+            $fileCount = 0;
+            foreach ($files as $file) {
+                if (!$file->isDir()) {
+                    $filePath = $file->getRealPath();
+                    $relativePath = substr($filePath, strlen(__DIR__) + 1);
+                    
+                    // Skip backups directory and git files
+                    if (strpos($relativePath, 'backups/') !== 0 && 
+                        strpos($relativePath, '.git') !== 0 &&
+                        strpos($relativePath, 'uploads/') !== 0) {
+                        $zip->addFile($filePath, $relativePath);
+                        $fileCount++;
+                    }
+                }
+            }
+            $zip->close();
+            
+            $metadata['sets'][$timestamp] = [
+                'description' => $description,
+                'created' => time(),
+                'files' => [$zipFileName],
+                'type' => 'full',
+                'file_count' => $fileCount
+            ];
+            
+            saveMetadata($metadata);
+            return ['success' => true, 'files' => [$zipFileName], 'timestamp' => $timestamp, 'type' => 'full', 'file_count' => $fileCount];
+        } else {
+            return ['success' => false, 'files' => [], 'timestamp' => $timestamp, 'error' => 'Failed to create ZIP file'];
+        }
+    } else {
+        // Regular JSON backup
+        $jsonFiles = ['tokens.json', 'tickets.json', 'settings.json'];
+        
+        foreach ($jsonFiles as $file) {
+            $filePath = __DIR__ . '/' . $file;
+            if (file_exists($filePath)) {
+                $fileType = pathinfo($file, PATHINFO_FILENAME);
+                $backupFileName = $fileType . '_' . $timestamp . '.json';
+                $backupPath = $backupDir . '/' . $backupFileName;
+                if (copy($filePath, $backupPath)) {
+                    $backupFiles[] = $backupFileName;
+                    
+                    // Store metadata for individual file
+                    $metadata[$backupFileName] = [
+                        'timestamp' => $timestamp,
+                        'created' => time(),
+                        'type' => $fileType
+                    ];
+                }
+            } else {
+                $skippedFiles[] = $file;
             }
         }
+        
+        // Store backup set metadata
+        if (!empty($backupFiles)) {
+            $metadata['sets'][$timestamp] = [
+                'description' => $description,
+                'created' => time(),
+                'files' => $backupFiles,
+                'type' => 'json',
+                'skipped' => $skippedFiles
+            ];
+        }
+        
+        saveMetadata($metadata);
+        
+        return ['success' => !empty($backupFiles), 'files' => $backupFiles, 'timestamp' => $timestamp, 'skipped' => $skippedFiles, 'type' => 'json'];
     }
-    
-    // Store backup set metadata
-    if (!empty($backupFiles)) {
-        $metadata['sets'][$timestamp] = [
-            'description' => $description,
-            'created' => time(),
-            'files' => $backupFiles
-        ];
-    }
-    
-    saveMetadata($metadata);
-    
-    return ['success' => !empty($backupFiles), 'files' => $backupFiles, 'timestamp' => $timestamp];
 }
 
 // Handle backup creation
 if (isset($_POST['create_backup'])) {
     $description = trim($_POST['description'] ?? '');
-    $result = performBackup($description);
+    $fullBackup = isset($_POST['full_backup']);
+    $result = performBackup($description, $fullBackup);
     
     if ($result['success']) {
-        EnderBitLogger::logAdmin('JSON_BACKUP_CREATED', 'BACKUP_JSON_FILES', [
+        $logData = [
             'files' => $result['files'], 
             'timestamp' => $result['timestamp'],
-            'description' => $description
-        ]);
-        header("Location: backup.php?msg=" . urlencode("Backup created successfully") . "&msgtype=success");
+            'description' => $description,
+            'type' => $result['type']
+        ];
+        
+        if (!empty($result['skipped'])) {
+            $logData['skipped'] = $result['skipped'];
+        }
+        
+        if ($fullBackup) {
+            $logData['file_count'] = $result['file_count'];
+        }
+        
+        EnderBitLogger::logAdmin($fullBackup ? 'FULL_BACKUP_CREATED' : 'JSON_BACKUP_CREATED', 'BACKUP_FILES', $logData);
+        
+        $msg = $fullBackup 
+            ? "Full system backup created successfully ({$result['file_count']} files)"
+            : "Backup created successfully" . (!empty($result['skipped']) ? " (Note: " . implode(', ', $result['skipped']) . " not found)" : "");
+        
+        header("Location: backup.php?msg=" . urlencode($msg) . "&msgtype=success");
     } else {
-        header("Location: backup.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
+        $errorMsg = $fullBackup && isset($result['error']) 
+            ? $result['error']
+            : "No JSON files found to backup";
+        header("Location: backup.php?msg=" . urlencode($errorMsg) . "&msgtype=error");
     }
     exit;
 }
@@ -166,33 +237,48 @@ if (isset($_POST['restore_backup_set'])) {
     $metadata = loadMetadata();
     
     if (isset($metadata['sets'][$backupTimestamp])) {
+        $backupType = $metadata['sets'][$backupTimestamp]['type'] ?? 'json';
         $files = $metadata['sets'][$backupTimestamp]['files'];
-        $restored = 0;
         
-        foreach ($files as $backupFile) {
-            $backupPath = $backupDir . '/' . $backupFile;
+        if ($backupType === 'full' && !empty($files)) {
+            // Full backup restore - ZIP file
+            $zipFile = $files[0];
+            $zipPath = $backupDir . '/' . $zipFile;
             
-            if (file_exists($backupPath)) {
-                $originalFile = '';
-                if (strpos($backupFile, 'tokens_') === 0) {
-                    $originalFile = 'tokens.json';
-                } elseif (strpos($backupFile, 'tickets_') === 0) {
-                    $originalFile = 'tickets.json';
-                } elseif (strpos($backupFile, 'settings_') === 0) {
-                    $originalFile = 'settings.json';
-                }
+            if (file_exists($zipPath)) {
+                header("Location: backup.php?msg=" . urlencode("Full backup restore not yet implemented - please download and restore manually") . "&msgtype=error");
+            } else {
+                header("Location: backup.php?msg=" . urlencode("Backup file not found") . "&msgtype=error");
+            }
+        } else {
+            // JSON backup restore
+            $restored = 0;
+            
+            foreach ($files as $backupFile) {
+                $backupPath = $backupDir . '/' . $backupFile;
                 
-                if ($originalFile && copy($backupPath, __DIR__ . '/' . $originalFile)) {
-                    $restored++;
+                if (file_exists($backupPath)) {
+                    $originalFile = '';
+                    if (strpos($backupFile, 'tokens_') === 0) {
+                        $originalFile = 'tokens.json';
+                    } elseif (strpos($backupFile, 'tickets_') === 0) {
+                        $originalFile = 'tickets.json';
+                    } elseif (strpos($backupFile, 'settings_') === 0) {
+                        $originalFile = 'settings.json';
+                    }
+                    
+                    if ($originalFile && copy($backupPath, __DIR__ . '/' . $originalFile)) {
+                        $restored++;
+                    }
                 }
             }
-        }
-        
-        if ($restored > 0) {
-            EnderBitLogger::logAdmin('BACKUP_SET_RESTORED', 'RESTORE_BACKUP', ['timestamp' => $backupTimestamp, 'files_restored' => $restored]);
-            header("Location: backup.php?msg=" . urlencode("Backup set restored successfully ($restored files)") . "&msgtype=success");
-        } else {
-            header("Location: backup.php?msg=" . urlencode("Failed to restore backup set") . "&msgtype=error");
+            
+            if ($restored > 0) {
+                EnderBitLogger::logAdmin('BACKUP_SET_RESTORED', 'RESTORE_BACKUP', ['timestamp' => $backupTimestamp, 'files_restored' => $restored]);
+                header("Location: backup.php?msg=" . urlencode("Backup set restored successfully ($restored files)") . "&msgtype=success");
+            } else {
+                header("Location: backup.php?msg=" . urlencode("Failed to restore backup set") . "&msgtype=error");
+            }
         }
     } else {
         header("Location: backup.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
@@ -552,10 +638,18 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             placeholder="e.g., Before major update, End of month backup, etc."
           ></textarea>
         </div>
+        
+        <div class="form-group">
+          <label>
+            <input type="checkbox" name="full_backup" id="full_backup" onchange="updateBackupInfo()">
+            <strong>Full System Backup</strong> (includes all PHP files, images, uploads, etc.)
+          </label>
+          <p style="font-size:12px; color:var(--muted); margin-top:4px; margin-left:26px;">
+            <span id="backup-info">Regular backup includes: tokens.json, tickets.json, and settings.json</span>
+          </p>
+        </div>
+        
         <button type="submit" name="create_backup" class="btn btn-primary">💾 Create Backup</button>
-        <p style="margin-top:12px; font-size:13px; color:var(--muted);">
-          This will backup: tokens.json, tickets.json, and settings.json
-        </p>
       </form>
     </div>
 
@@ -601,6 +695,9 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
           <div class="backup-set-card">
             <div class="backup-time">
               <?= date('g:i A', $set['created']) ?>
+              <?php if (($set['type'] ?? 'json') === 'full'): ?>
+                <span style="background:var(--primary);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px;">FULL</span>
+              <?php endif; ?>
             </div>
             <div class="backup-date">
               <?= date('l, F j, Y', $set['created']) ?>
@@ -611,19 +708,30 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             </div>
             
             <div class="backup-files">
-              📦 <?= $set['file_count'] ?> files backed up
-              <br>
-              <span style="font-size:11px;">
-                <?php
-                $fileTypes = [];
-                foreach ($set['files'] as $file) {
-                    if (strpos($file, 'tokens_') === 0) $fileTypes[] = 'Users';
-                    elseif (strpos($file, 'tickets_') === 0) $fileTypes[] = 'Tickets';
-                    elseif (strpos($file, 'settings_') === 0) $fileTypes[] = 'Settings';
-                }
-                echo implode(' • ', array_unique($fileTypes));
-                ?>
-              </span>
+              <?php if (($set['type'] ?? 'json') === 'full'): ?>
+                📦 Full system backup (<?= number_format($set['file_count'] ?? 0) ?> files)
+                <br>
+                <span style="font-size:11px;">Complete site backup in ZIP format</span>
+              <?php else: ?>
+                📦 <?= $set['file_count'] ?> files backed up
+                <br>
+                <span style="font-size:11px;">
+                  <?php
+                  $fileTypes = [];
+                  foreach ($set['files'] as $file) {
+                      if (strpos($file, 'tokens_') === 0) $fileTypes[] = 'Users';
+                      elseif (strpos($file, 'tickets_') === 0) $fileTypes[] = 'Tickets';
+                      elseif (strpos($file, 'settings_') === 0) $fileTypes[] = 'Settings';
+                  }
+                  echo implode(' • ', array_unique($fileTypes));
+                  
+                  // Show skipped files warning
+                  if (!empty($set['skipped'])) {
+                      echo '<br><span style="color:var(--yellow);">⚠️ Missing: ' . implode(', ', $set['skipped']) . '</span>';
+                  }
+                  ?>
+                </span>
+              <?php endif; ?>
             </div>
             
             <div class="backup-actions">
@@ -659,6 +767,20 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
   </div>
 
 <script>
+// Update backup info text
+function updateBackupInfo() {
+  const checkbox = document.getElementById('full_backup');
+  const info = document.getElementById('backup-info');
+  
+  if (checkbox.checked) {
+    info.innerHTML = '<strong>Full backup will include:</strong> All PHP files, HTML, CSS, JavaScript, images, uploads, and configuration files (excluding backups directory)';
+    info.style.color = 'var(--accent)';
+  } else {
+    info.innerHTML = 'Regular backup includes: tokens.json, tickets.json, and settings.json';
+    info.style.color = 'var(--muted)';
+  }
+}
+
 // Banner management
 function hideBanner() {
   const banner = document.getElementById('banner');

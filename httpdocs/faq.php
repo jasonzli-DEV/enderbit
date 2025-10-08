@@ -688,6 +688,212 @@ require_once __DIR__ . '/config.php';
         <p>Each server can have multiple databases depending on your plan.</p>
       </div>
     </div>
+
+    <div class="faq-item" data-keywords="ddos protection security attack">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Are servers protected from DDoS attacks?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! All EnderBit servers come with enterprise-grade DDoS protection:</p>
+        <ul>
+          <li><strong>Layer 4 & Layer 7 Protection:</strong> Against volumetric and application-layer attacks</li>
+          <li><strong>Real-time Mitigation:</strong> Automatic detection and filtering of malicious traffic</li>
+          <li><strong>No Downtime:</strong> Protection activates instantly without interrupting your server</li>
+          <li><strong>Global Network:</strong> Traffic filtered through our worldwide network infrastructure</li>
+        </ul>
+        <p>Your server stays online even during large-scale attacks.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="refund money back guarantee cancel">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>What is your refund policy?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>We offer a <strong>7-day money-back guarantee</strong> on all new services:</p>
+        <ul>
+          <li>Full refund if you're not satisfied within 7 days of purchase</li>
+          <li>No questions asked - simply open a support ticket</li>
+          <li>Refunds processed within 3-5 business days</li>
+          <li>Does not apply to renewed services or promotional pricing</li>
+        </ul>
+        <p>We want you to be completely satisfied with your hosting experience!</p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="upgrade downgrade plan change">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Can I upgrade or downgrade my plan?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! You can change your plan at any time:</p>
+        <p><strong>Upgrading:</strong></p>
+        <ul>
+          <li>Instant upgrade - no downtime</li>
+          <li>Pay only the prorated difference for remaining days</li>
+          <li>Your data and settings are preserved</li>
+        </ul>
+        <p><strong>Downgrading:</strong></p>
+        <ul>
+          <li>Takes effect at next billing cycle</li>
+          <li>Ensure your world size fits the new plan limits</li>
+          <li>Contact support if you need immediate downgrade</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="backup automatic schedule restore data">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How do automatic backups work?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>EnderBit provides comprehensive backup solutions:</p>
+        <p><strong>Automatic Backups:</strong></p>
+        <ul>
+          <li>Daily backups of your entire server (included in all plans)</li>
+          <li>Kept for 7 days (Premium plans: 30 days)</li>
+          <li>Zero-impact on performance - runs during low usage</li>
+        </ul>
+        <p><strong>Manual Backups:</strong></p>
+        <ul>
+          <li>Create backups anytime from the control panel</li>
+          <li>Download backups to your computer</li>
+          <li>One-click restore from any backup</li>
+        </ul>
+        <p><strong>Scheduled Backups:</strong></p>
+        <ul>
+          <li>Set custom backup schedules (hourly, daily, weekly)</li>
+          <li>Enable via the Admin Panel → Backup Management</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="server location datacenter region ping latency">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Where are your servers located?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>We operate multiple datacenters worldwide for optimal performance:</p>
+        <ul>
+          <li><strong>North America:</strong> Los Angeles, Dallas, New York, Miami</li>
+          <li><strong>Europe:</strong> London, Frankfurt, Amsterdam, Paris</li>
+          <li><strong>Asia-Pacific:</strong> Singapore, Tokyo, Sydney</li>
+          <li><strong>South America:</strong> São Paulo (Premium)</li>
+        </ul>
+        <p>Choose the location closest to your players during signup for the lowest latency!</p>
+        <p><em>Note: Some locations may require Premium or Business plans.</em></p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="whitelist blacklist ban player permission">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How do I whitelist or ban players?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p><strong>Whitelist (Vanilla/Spigot/Paper):</strong></p>
+        <pre style="background:var(--input-bg);padding:12px;border-radius:6px;overflow-x:auto;">
+/whitelist on
+/whitelist add PlayerName
+/whitelist remove PlayerName
+/whitelist list</pre>
+        
+        <p><strong>Ban Players:</strong></p>
+        <pre style="background:var(--input-bg);padding:12px;border-radius:6px;overflow-x:auto;">
+/ban PlayerName [reason]
+/ban-ip IP_Address
+/pardon PlayerName
+/banlist</pre>
+        
+        <p><strong>Using Plugins:</strong></p>
+        <ul>
+          <li><strong>LuckPerms:</strong> Advanced permission management</li>
+          <li><strong>EssentialsX:</strong> Includes ban/kick/whitelist commands</li>
+          <li><strong>AdvancedBan:</strong> Temporary bans with reasons</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="java version update 8 11 17 21">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>What Java version should I use?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Java version depends on your server type:</p>
+        <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+          <tr style="background:var(--input-bg);">
+            <th style="padding:8px;text-align:left;border:1px solid var(--input-border);">Server Version</th>
+            <th style="padding:8px;text-align:left;border:1px solid var(--input-border);">Java Version</th>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid var(--input-border);">Minecraft 1.16 and below</td>
+            <td style="padding:8px;border:1px solid var(--input-border);">Java 8 or 11</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid var(--input-border);">Minecraft 1.17 - 1.20.4</td>
+            <td style="padding:8px;border:1px solid var(--input-border);">Java 17</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid var(--input-border);">Minecraft 1.20.5+</td>
+            <td style="padding:8px;border:1px solid var(--input-border);">Java 21</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid var(--input-border);">Modded (Forge/Fabric)</td>
+            <td style="padding:8px;border:1px solid var(--input-border);">Check modpack requirements</td>
+          </tr>
+        </table>
+        <p style="margin-top:12px;">Change Java version in your server's Startup settings in the control panel.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="subserver bungee waterfall velocity network proxy">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Can I run a server network with multiple servers?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! You can create a multi-server network:</p>
+        <p><strong>Setup Guide:</strong></p>
+        <ol>
+          <li>Order multiple servers (one for proxy, others for game servers)</li>
+          <li>Install <strong>Velocity</strong> or <strong>Waterfall</strong> on your proxy server</li>
+          <li>Configure backend servers to connect to the proxy</li>
+          <li>Players connect to the proxy IP, which routes them to backend servers</li>
+        </ol>
+        <p><strong>Benefits:</strong></p>
+        <ul>
+          <li>Separate lobbies, minigames, and survival servers</li>
+          <li>Players switch servers without disconnecting</li>
+          <li>Better performance by distributing load</li>
+          <li>Easier maintenance - update servers individually</li>
+        </ul>
+        <p>Need help? Create a support ticket and we'll guide you through the setup!</p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="support ticket response time help">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How fast do you respond to support tickets?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Our support team strives for fast, helpful responses:</p>
+        <ul>
+          <li><strong>Critical Issues:</strong> Within 30 minutes (server down, major bugs)</li>
+          <li><strong>High Priority:</strong> Within 2-4 hours (performance issues, errors)</li>
+          <li><strong>Normal Requests:</strong> Within 24 hours (general questions, guidance)</li>
+          <li><strong>Low Priority:</strong> Within 48 hours (feature requests, suggestions)</li>
+        </ul>
+        <p><strong>Business Hours:</strong> 9 AM - 11 PM EST, 7 days a week</p>
+        <p><em>Premium and Business plan customers receive priority support!</em></p>
+      </div>
+    </div>
   </div>
 
   <div class="contact-cta">
