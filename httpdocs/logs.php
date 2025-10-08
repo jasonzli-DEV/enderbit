@@ -482,9 +482,6 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
         </div>
       </form>
       
-      <div style="margin-top: 12px;">
-        <button type="button" onclick="backupJsonFiles()" class="btn btn-primary">� Backup JSON Files</button>
-      </div>
     </div>
 
     <div class="log-container">
