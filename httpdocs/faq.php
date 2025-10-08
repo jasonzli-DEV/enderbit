@@ -381,6 +381,53 @@ require_once __DIR__ . '/config.php';
   <div class="faq-section" id="getting-started">
     <h2>🚀 Getting Started</h2>
     
+    <div class="faq-item" data-keywords="free hosting indie developer personal project student open source nonprofit">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Do you offer free hosting for indie developers and personal projects?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p><strong>Yes!</strong> EnderBit is committed to supporting indie developers, students, and personal projects. We provide <strong>FREE hosting services</strong> to qualifying projects.</p>
+        
+        <p><strong>Who Qualifies:</strong></p>
+        <ul>
+          <li>🎮 <strong>Indie Game Developers:</strong> Testing servers for your game development</li>
+          <li>👨‍💻 <strong>Open Source Projects:</strong> Community-driven projects with public repositories</li>
+          <li>🎓 <strong>Students & Educators:</strong> Educational projects and learning environments</li>
+          <li>💡 <strong>Personal Projects:</strong> Non-commercial hobby projects and experiments</li>
+          <li>🌟 <strong>Content Creators:</strong> Small community servers for your followers</li>
+        </ul>
+        
+        <p><strong>How to Apply:</strong></p>
+        <ol>
+          <li>Create an account on EnderBit</li>
+          <li>Go to <strong>Support</strong> and create a ticket</li>
+          <li>Select the <strong>"Get a Server"</strong> category</li>
+          <li>In your ticket, mention:
+            <ul style="margin-top:8px;">
+              <li>That you're applying for free hosting</li>
+              <li>Description of your project</li>
+              <li>Why you need the server (development, learning, community, etc.)</li>
+              <li>Link to your project (GitHub, portfolio, etc.) if available</li>
+            </ul>
+          </li>
+          <li>Our team will review and respond within 48 hours</li>
+        </ol>
+        
+        <p><strong>What You Get:</strong></p>
+        <ul>
+          <li>Free server hosting (specs based on your needs)</li>
+          <li>Full control panel access</li>
+          <li>Community support</li>
+          <li>No time limits - keep it as long as you need it!</li>
+        </ul>
+        
+        <p style="background:var(--input-bg);padding:12px;border-radius:8px;margin-top:12px;">
+          <strong>💡 Note:</strong> Free hosting is provided on a case-by-case basis. We prioritize projects that align with our mission to support learning, creativity, and community building. Commercial projects require paid plans.
+        </p>
+      </div>
+    </div>
+    
     <div class="faq-item" data-keywords="account register signup create">
       <div class="faq-question" onclick="toggleFAQ(this)">
         <span>How do I create an account?</span>
