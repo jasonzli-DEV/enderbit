@@ -80,6 +80,16 @@ if ($format === 'structured') {
         $logContent = implode("\n", $filteredLines);
     }
 }
+
+// Handle clear log file action
+if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
+    if (file_exists($logFile)) {
+        file_put_contents($logFile, '');
+        EnderBitLogger::logSystem('LOG_FILE_CLEARED', ['log_type' => $logType, 'cleared_by' => 'admin']);
+        header("Location: logs.php?type=$logType&format=$format&lines=$lines&msg=" . urlencode("Log file cleared successfully") . "&msgtype=success");
+        exit;
+    }
+}
 ?>
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -248,6 +258,7 @@ if ($format === 'structured') {
   .log-type.ADMIN { background:var(--red); color:#fff; }
   .log-type.SECURITY { background:#dc143c; color:#fff; }
   .log-type.SYSTEM { background:var(--muted); color:#fff; }
+  .log-type.PERFORMANCE { background:#9333ea; color:#fff; }
   .log-type.UPLOAD { background:#8a2be2; color:#fff; }
 
   .log-event {
@@ -300,6 +311,74 @@ if ($format === 'structured') {
     margin-left:12px;
   }
 
+  .clickable-stat {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .clickable-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .clickable-stat.active {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.3);
+  }
+
+  .clear-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 12px;
+    transition: opacity 0.2s;
+  }
+
+  .clear-btn:hover {
+    opacity: 0.9;
+  }
+
+  .banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 20px;
+    color: #fff;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .banner.show {
+    transform: translateY(0);
+  }
+
+  .banner.success {
+    background: var(--green);
+  }
+
+  .banner.error {
+    background: var(--red);
+  }
+
+  .banner .close {
+    cursor: pointer;
+    font-weight: 700;
+    opacity: 0.8;
+  }
+
+  .banner .close:hover {
+    opacity: 1;
+  }
+
   .log-info {
     display:flex;
     justify-content:space-between;
@@ -328,6 +407,13 @@ if ($format === 'structured') {
 </head>
 <body>
   <div class="page">
+    <?php if (isset($_GET['msg'])): ?>
+      <div id="banner" class="banner <?= htmlspecialchars($_GET['msgtype'] ?? 'success') ?> show">
+        <span><?= htmlspecialchars($_GET['msg']) ?></span>
+        <span class="close" onclick="hideBanner()">×</span>
+      </div>
+    <?php endif; ?>
+
     <div class="header">
       <h1>📋 System Logs</h1>
       <a href="/admin.php" class="btn btn-secondary">← Back to Admin</a>
@@ -336,7 +422,8 @@ if ($format === 'structured') {
     <!-- Log Statistics -->
     <div class="stats-grid">
       <?php foreach ($availableLogs as $type => $info): ?>
-        <div class="stat-card">
+        <div class="stat-card clickable-stat <?= $logType === $type ? 'active' : '' ?>" 
+             onclick="switchLogType('<?= $type ?>')">
           <div class="stat-label"><?= htmlspecialchars($info['name']) ?></div>
           <div class="stat-value" style="color:<?= $info['exists'] ? 'var(--accent)' : 'var(--muted)' ?>">
             <?= $info['exists'] ? number_format($info['lines']) : '0' ?>
@@ -349,10 +436,10 @@ if ($format === 'structured') {
     </div>
 
     <div class="controls">
-      <form method="get" action="logs.php">
+      <form method="get" action="logs.php" id="logForm">
         <div class="control-row">
           <label for="type">Log Type:</label>
-          <select name="type" id="type">
+          <select name="type" id="type" onchange="loadLogs()">
             <?php foreach ($availableLogs as $type_key => $info): ?>
               <option value="<?= $type_key ?>" <?= $logType === $type_key ? 'selected' : '' ?>>
                 <?= htmlspecialchars($info['name']) ?> 
@@ -362,19 +449,25 @@ if ($format === 'structured') {
           </select>
 
           <label for="format">Format:</label>
-          <select name="format" id="format" class="format-toggle">
+          <select name="format" id="format" class="format-toggle" onchange="loadLogs()">
             <option value="structured" <?= $format === 'structured' ? 'selected' : '' ?>>Structured</option>
             <option value="raw" <?= $format === 'raw' ? 'selected' : '' ?>>Raw</option>
           </select>
 
           <label for="lines">Lines:</label>
-          <input type="number" name="lines" id="lines" value="<?= $lines ?>" min="10" max="10000" style="width:100px;">
+          <input type="number" name="lines" id="lines" value="<?= $lines ?>" min="10" max="10000" style="width:100px;" onchange="loadLogs()">
 
           <label for="search">Search:</label>
-          <input type="text" name="search" id="search" value="<?= htmlspecialchars($search) ?>" placeholder="Filter logs..." style="flex:1;min-width:200px;">
+          <input type="text" name="search" id="search" value="<?= htmlspecialchars($search) ?>" placeholder="Filter logs..." style="flex:1;min-width:200px;" oninput="debounceSearch()">
 
-          <button type="submit" class="btn btn-primary">🔍 Load Logs</button>
           <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
+          
+          <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
+            <form method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to clear this log file? This action cannot be undone.')">
+              <input type="hidden" name="clear_log" value="<?= $logType ?>">
+              <button type="submit" class="clear-btn">🗑️ Clear Log</button>
+            </form>
+          <?php endif; ?>
         </div>
       </form>
     </div>
@@ -399,13 +492,27 @@ if ($format === 'structured') {
                   <span class="log-type <?= htmlspecialchars($entry['type']) ?>"><?= htmlspecialchars($entry['type']) ?></span>
                 </div>
                 <div class="log-event"><?= htmlspecialchars($entry['event']) ?></div>
-                <?php if (!empty($entry['details'])): ?>
+                <?php if (!empty($entry['details']) || isset($entry['memory_usage']) || isset($entry['execution_time'])): ?>
                   <div class="log-details">
-                    <?php foreach ($entry['details'] as $key => $value): ?>
-                      <?php if (!empty($value)): ?>
-                        <div><strong><?= htmlspecialchars($key) ?>:</strong> <code><?= htmlspecialchars(is_array($value) ? json_encode($value) : $value) ?></code></div>
+                    <?php if ($entry['type'] === 'PERFORMANCE'): ?>
+                      <?php if (isset($entry['memory_usage'])): ?>
+                        <div><strong>Memory Usage:</strong> <code><?= number_format($entry['memory_usage'] / 1024 / 1024, 2) ?> MB</code></div>
                       <?php endif; ?>
-                    <?php endforeach; ?>
+                      <?php if (isset($entry['memory_peak'])): ?>
+                        <div><strong>Peak Memory:</strong> <code><?= number_format($entry['memory_peak'] / 1024 / 1024, 2) ?> MB</code></div>
+                      <?php endif; ?>
+                      <?php if (isset($entry['execution_time'])): ?>
+                        <div><strong>Execution Time:</strong> <code><?= number_format($entry['execution_time'] * 1000, 2) ?> ms</code></div>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($entry['details'])): ?>
+                      <?php foreach ($entry['details'] as $key => $value): ?>
+                        <?php if (!empty($value)): ?>
+                          <div><strong><?= htmlspecialchars($key) ?>:</strong> <code><?= htmlspecialchars(is_array($value) ? json_encode($value) : $value) ?></code></div>
+                        <?php endif; ?>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
                     
                     <?php if (isset($entry['ip'])): ?>
                       <div><strong>IP:</strong> <code><?= htmlspecialchars($entry['ip']) ?></code></div>
@@ -440,6 +547,57 @@ const saved = localStorage.getItem("theme");
 if(saved){
   document.documentElement.setAttribute("data-theme", saved);
 }
+
+// Auto-load logs functionality
+function loadLogs() {
+  const form = document.getElementById('logForm');
+  if (form) {
+    form.submit();
+  }
+}
+
+// Switch log type when clicking statistics
+function switchLogType(logType) {
+  const typeSelect = document.getElementById('type');
+  if (typeSelect) {
+    typeSelect.value = logType;
+    loadLogs();
+  }
+}
+
+// Debounced search to avoid too many requests
+let searchTimeout;
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    loadLogs();
+  }, 500);
+}
+
+// Banner management
+function hideBanner() {
+  const banner = document.getElementById('banner');
+  if (banner) {
+    banner.classList.remove('show');
+    // Remove from URL after hiding
+    setTimeout(() => {
+      const url = new URL(window.location);
+      url.searchParams.delete('msg');
+      url.searchParams.delete('msgtype');
+      window.history.replaceState({}, '', url);
+    }, 300);
+  }
+}
+
+// Auto-hide banner after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+  const banner = document.getElementById('banner');
+  if (banner) {
+    setTimeout(() => {
+      hideBanner();
+    }, 5000);
+  }
+});
 </script>
 </body>
 </html>

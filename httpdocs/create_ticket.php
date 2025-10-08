@@ -100,6 +100,13 @@ if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ER
 $userIp = get_client_ip();
 $userTimezone = get_timezone_from_ip($userIp);
 
+EnderBitLogger::logPerformance('TICKET_CREATION_PROCESSING', [
+    'ticket_id' => $ticketId,
+    'has_attachment' => $attachmentPath !== null,
+    'category' => $category,
+    'priority' => $priority
+]);
+
 // Create new ticket
 $newTicket = [
     'id' => $ticketId,

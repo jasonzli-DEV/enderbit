@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
+
+// Log page load performance
+EnderBitLogger::logPerformance('PAGE_LOAD_START', ['page' => 'index']);
 ?>
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -524,5 +528,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   });
 });
 </script>
+
+<?php
+// Log page load completion
+EnderBitLogger::logPerformance('PAGE_LOAD_COMPLETE', ['page' => 'index']);
+?>
 </body>
 </html>

@@ -162,6 +162,25 @@ class EnderBitLogger {
     }
     
     /**
+     * Log performance events
+     */
+    public static function logPerformance($event, $details = []) {
+        $logFile = self::$logPath . 'performance.log';
+        
+        $entry = [
+            'timestamp' => date('Y-m-d H:i:s'),
+            'type' => 'PERFORMANCE',
+            'event' => $event,
+            'memory_usage' => memory_get_usage(true),
+            'memory_peak' => memory_get_peak_usage(true),
+            'execution_time' => microtime(true) - ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true)),
+            'details' => $details
+        ];
+        
+        self::writeLog($logFile, $entry);
+    }
+    
+    /**
      * Log file upload events
      */
     public static function logUpload($event, $filename, $details = []) {
@@ -227,6 +246,7 @@ class EnderBitLogger {
             'admin' => 'Admin Actions',
             'security' => 'Security Events',
             'system' => 'System Events',
+            'performance' => 'Performance Metrics',
             'uploads' => 'File Uploads',
             'php_errors' => 'PHP Errors',
             'deployment' => 'Git Deployments'

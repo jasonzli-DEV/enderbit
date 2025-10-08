@@ -41,6 +41,11 @@ EnderBitLogger::logSecurity('SUSPICIOUS_FILE_UPLOAD', 'HIGH', ['filename' => 'ma
 EnderBitLogger::logSystem('APPLICATION_STARTUP', ['version' => '1.0.0', 'php_version' => PHP_VERSION]);
 EnderBitLogger::logSystem('DATABASE_CONNECTION_FAILED', ['error' => 'Connection timeout']);
 
+// Sample performance logs
+EnderBitLogger::logPerformance('PAGE_LOAD_COMPLETE', ['page' => 'index', 'render_time' => 0.245]);
+EnderBitLogger::logPerformance('TICKET_CREATION_PROCESSING', ['ticket_id' => 'TICKET-DEMO123', 'has_attachment' => true]);
+EnderBitLogger::logPerformance('DATABASE_QUERY_SLOW', ['query_type' => 'ticket_search', 'execution_time' => 2.5]);
+
 // Sample upload logs
 EnderBitLogger::logUpload('UPLOAD_SUCCESS', 'screenshot.png', ['ticket_id' => 'TICKET-DEMO123', 'file_size' => 245760]);
 EnderBitLogger::logUpload('UPLOAD_REJECTED_TYPE', 'malware.exe', ['reason' => 'Invalid file type']);
