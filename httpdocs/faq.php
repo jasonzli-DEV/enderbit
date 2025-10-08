@@ -360,7 +360,7 @@ require_once __DIR__ . '/config.php';
         <div class="category-icon">🚀</div>
         <div class="category-title">Getting Started</div>
         <div class="category-desc">New to EnderBit? Learn the basics and get your server running quickly.</div>
-        <div class="article-count">5 articles</div>
+        <div class="article-count">6 articles</div>
       </div>
 
       <div class="category-card" onclick="scrollToSection('troubleshooting')">
@@ -370,11 +370,18 @@ require_once __DIR__ . '/config.php';
         <div class="article-count">6 articles</div>
       </div>
 
+      <div class="category-card" onclick="scrollToSection('server-management')">
+        <div class="category-icon">🎛️</div>
+        <div class="category-title">Server Management</div>
+        <div class="category-desc">Backups, databases, security, and administrative tools.</div>
+        <div class="article-count">8 articles</div>
+      </div>
+
       <div class="category-card" onclick="scrollToSection('advanced')">
         <div class="category-icon">⚙️</div>
         <div class="category-title">Advanced</div>
-        <div class="category-desc">Advanced configuration, mods, plugins, and optimization tips.</div>
-        <div class="article-count">5 articles</div>
+        <div class="category-desc">Mods, plugins, networks, custom domains, and advanced configuration.</div>
+        <div class="article-count">9 articles</div>
       </div>
     </div>
   </div>
@@ -639,49 +646,9 @@ require_once __DIR__ . '/config.php';
     </div>
   </div>
 
-  <div class="faq-section" id="advanced">
-    <h2>⚙️ Advanced</h2>
+  <div class="faq-section" id="server-management">
+    <h2>🎛️ Server Management</h2>
     
-    <div class="faq-item" data-keywords="mod plugin install forge bukkit spigot">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>How do I install mods or plugins?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p><strong>For Forge/Fabric Mods:</strong></p>
-        <ol>
-          <li>Stop your server</li>
-          <li>Upload mod files to the <code>/mods</code> folder</li>
-          <li>Start your server</li>
-        </ol>
-        <p><strong>For Bukkit/Spigot/Paper Plugins:</strong></p>
-        <ol>
-          <li>Stop your server</li>
-          <li>Upload plugin .jar files to the <code>/plugins</code> folder</li>
-          <li>Start your server</li>
-          <li>Configure plugins in the <code>/plugins/PluginName</code> folder</li>
-        </ol>
-        <p>Always download mods/plugins from trusted sources!</p>
-      </div>
-    </div>
-
-    <div class="faq-item" data-keywords="custom domain subdomain dns">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>Can I use a custom domain for my server?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>Yes! You can use a custom domain:</p>
-        <ol>
-          <li>Purchase a domain from a registrar (Namecheap, GoDaddy, etc.)</li>
-          <li>Create an <strong>A record</strong> pointing to your server IP</li>
-          <li>Or create an <strong>SRV record</strong> for port forwarding</li>
-          <li>Wait for DNS propagation (can take up to 48 hours)</li>
-        </ol>
-        <p>Example SRV record: <code>_minecraft._tcp.play.yourdomain.com</code></p>
-      </div>
-    </div>
-
     <div class="faq-item" data-keywords="console command execute admin">
       <div class="faq-question" onclick="toggleFAQ(this)">
         <span>How do I execute console commands?</span>
@@ -751,23 +718,6 @@ require_once __DIR__ . '/config.php';
           <li><strong>Global Network:</strong> Traffic filtered through our worldwide network infrastructure</li>
         </ul>
         <p>Your server stays online even during large-scale attacks.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" data-keywords="refund money back guarantee cancel">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>What is your refund policy?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>We offer a <strong>7-day money-back guarantee</strong> on all new services:</p>
-        <ul>
-          <li>Full refund if you're not satisfied within 7 days of purchase</li>
-          <li>No questions asked - simply open a support ticket</li>
-          <li>Refunds processed within 3-5 business days</li>
-          <li>Does not apply to renewed services or promotional pricing</li>
-        </ul>
-        <p>We want you to be completely satisfied with your hosting experience!</p>
       </div>
     </div>
 
@@ -842,6 +792,68 @@ require_once __DIR__ . '/config.php';
           <li><strong>EssentialsX:</strong> Includes ban/kick/whitelist commands</li>
           <li><strong>AdvancedBan:</strong> Temporary bans with reasons</li>
         </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="support ticket response time help">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How fast do you respond to support tickets?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Our support team strives for fast, helpful responses:</p>
+        <ul>
+          <li><strong>Critical Issues:</strong> Within 30 minutes (server down, major bugs)</li>
+          <li><strong>High Priority:</strong> Within 2-4 hours (performance issues, errors)</li>
+          <li><strong>Normal Requests:</strong> Within 24 hours (general questions, guidance)</li>
+          <li><strong>Low Priority:</strong> Within 48 hours (feature requests, suggestions)</li>
+        </ul>
+        <p><strong>Business Hours:</strong> 9 AM - 11 PM EST, 7 days a week</p>
+        <p><em>All users receive the same level of support - everyone is equal at EnderBit!</em></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="faq-section" id="advanced">
+    <h2>⚙️ Advanced</h2>
+    
+    <div class="faq-item" data-keywords="mod plugin install forge bukkit spigot">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How do I install mods or plugins?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p><strong>For Forge/Fabric Mods:</strong></p>
+        <ol>
+          <li>Stop your server</li>
+          <li>Upload mod files to the <code>/mods</code> folder</li>
+          <li>Start your server</li>
+        </ol>
+        <p><strong>For Bukkit/Spigot/Paper Plugins:</strong></p>
+        <ol>
+          <li>Stop your server</li>
+          <li>Upload plugin .jar files to the <code>/plugins</code> folder</li>
+          <li>Start your server</li>
+          <li>Configure plugins in the <code>/plugins/PluginName</code> folder</li>
+        </ol>
+        <p>Always download mods/plugins from trusted sources!</p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="custom domain subdomain dns">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Can I use a custom domain for my server?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! You can use a custom domain:</p>
+        <ol>
+          <li>Purchase a domain from a registrar (Namecheap, GoDaddy, etc.)</li>
+          <li>Create an <strong>A record</strong> pointing to your server IP</li>
+          <li>Or create an <strong>SRV record</strong> for port forwarding</li>
+          <li>Wait for DNS propagation (can take up to 48 hours)</li>
+        </ol>
+        <p>Example SRV record: <code>_minecraft._tcp.play.yourdomain.com</code></p>
       </div>
     </div>
 
