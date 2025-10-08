@@ -591,6 +591,7 @@ function debounceSearch() {
 function hideBanner() {
   const banner = document.getElementById('banner');
   if (banner) {
+    banner.classList.add('hide');
     banner.classList.remove('show');
     // Remove from URL after hiding
     setTimeout(() => {
@@ -602,10 +603,12 @@ function hideBanner() {
   }
 }
 
-// Auto-hide banner after 5 seconds
+// Auto-show and hide banner
 document.addEventListener('DOMContentLoaded', function() {
   const banner = document.getElementById('banner');
   if (banner) {
+    banner.classList.remove('hide');
+    setTimeout(() => banner.classList.add('show'), 120);
     setTimeout(() => {
       hideBanner();
     }, 5000);

@@ -582,6 +582,7 @@ if(saved){
 function hideBanner() {
   const banner = document.getElementById('banner');
   if (banner) {
+    banner.classList.add('hide');
     banner.classList.remove('show');
     setTimeout(() => {
       const url = new URL(window.location);
@@ -592,10 +593,12 @@ function hideBanner() {
   }
 }
 
-// Auto-hide banner after 5 seconds
+// Auto-show and hide banner
 document.addEventListener('DOMContentLoaded', function() {
   const banner = document.getElementById('banner');
   if (banner) {
+    banner.classList.remove('hide');
+    setTimeout(() => banner.classList.add('show'), 120);
     setTimeout(() => {
       hideBanner();
     }, 5000);

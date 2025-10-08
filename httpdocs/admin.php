@@ -216,6 +216,15 @@ if (isset($_POST['approve_user'])) {
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
   .empty-state h3{color:var(--text);margin-bottom:8px;}
 
+  /* Management Cards */
+  .management-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-bottom:32px;}
+  .management-card{background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:32px;text-align:center;transition:all .3s;text-decoration:none;display:block;position:relative;}
+  .management-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(88,166,255,.2);border-color:var(--accent);}
+  .management-icon{font-size:48px;margin-bottom:16px;}
+  .management-card h3{margin:0 0 12px;color:var(--accent);font-size:20px;}
+  .management-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
+  .management-card .badge{position:absolute;top:16px;right:16px;background:var(--red);color:#fff;font-size:11px;padding:4px 10px;border-radius:12px;font-weight:700;}
+
   /* Banner System */
   .banner {
     position:fixed;
@@ -273,25 +282,11 @@ if (isset($_POST['approve_user'])) {
       <?php
       // Check for updates first
       $hasUpdate = checkForUpdates();
-      ?>
       
-      <div class="page-header">
-        <h1>🎛️ Admin Panel</h1>
-        <div class="quick-actions">
-          <a href="logs.php" class="btn btn-secondary">📋 System Logs</a>
-          <a href="backup.php" class="btn btn-secondary">💾 Backups</a>
-          <a href="update.php" class="btn btn-secondary">
-            🔄 Update<?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
-          </a>
-        </div>
-      </div>
-
-      <!-- Dashboard Statistics -->
-      <?php
+      // Get statistics
       $tokensFile = __DIR__ . '/tokens.json';
       $ticketsFile = __DIR__ . '/tickets.json';
       
-      $totalUsers = 0;
       $pendingUsers = 0;
       if (file_exists($tokensFile)) {
           $tokens = json_decode(file_get_contents($tokensFile), true);
@@ -315,6 +310,16 @@ if (isset($_POST['approve_user'])) {
       }
       ?>
       
+      <div class="page-header">
+        <h1>🎛️ Admin Dashboard</h1>
+        <div class="quick-actions">
+          <a href="update.php" class="btn btn-secondary">
+            🔄 Update<?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Statistics Overview -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">📊</div>
@@ -338,6 +343,40 @@ if (isset($_POST['approve_user'])) {
         </div>
       </div>
 
+      <!-- Management Cards -->
+      <div class="management-grid">
+        <a href="tickets_admin.php" class="management-card">
+          <div class="management-icon">🎫</div>
+          <h3>Ticket Management</h3>
+          <p>View and manage support tickets</p>
+          <?php if ($openTickets > 0): ?>
+            <span class="badge"><?= $openTickets ?> open</span>
+          <?php endif; ?>
+        </a>
+
+        <a href="users_admin.php" class="management-card">
+          <div class="management-icon">👥</div>
+          <h3>User Management</h3>
+          <p>Approve pending user registrations</p>
+          <?php if ($pendingUsers > 0): ?>
+            <span class="badge"><?= $pendingUsers ?> pending</span>
+          <?php endif; ?>
+        </a>
+
+        <a href="logs.php" class="management-card">
+          <div class="management-icon">📋</div>
+          <h3>System Logs</h3>
+          <p>View application logs and events</p>
+        </a>
+
+        <a href="backup.php" class="management-card">
+          <div class="management-icon">💾</div>
+          <h3>Backup Management</h3>
+          <p>Create and manage data backups</p>
+        </a>
+      </div>
+
+      <!-- Settings Card -->
       <div class="card settings-card">
         <h2>⚙️ Settings</h2>
         <form method="post">
@@ -355,165 +394,6 @@ if (isset($_POST['approve_user'])) {
             <button type="submit" name="logout" class="btn btn-danger" style="flex:1;min-width:200px;">🚪 Logout</button>
           </div>
         </form>
-      </div>
-
-      <div class="card">
-        <div class="section-header" style="margin-top:0;">
-          <h2>👥 Pending Users</h2>
-        </div>
-        <?php
-        $tokensFile = __DIR__ . '/tokens.json';
-        $hasPendingUsers = false;
-        if (file_exists($tokensFile)) {
-            $tokens = json_decode(file_get_contents($tokensFile), true);
-            if (is_array($tokens)) {
-                foreach ($tokens as $user) {
-                    if (!empty($user['verified']) || empty($user['verified'])) {
-                        $hasPendingUsers = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if ($hasPendingUsers): ?>
-        <table>
-          <tr><th>Email</th><th>Status</th><th>Action</th></tr>
-          <?php
-          foreach ($tokens as $user) {
-              if (!empty($user['verified']) && empty($user['approved'])) {
-                  echo "<tr><td>".htmlspecialchars($user['email'])."</td><td><span style='color:var(--green);'>✓ Verified, Awaiting Approval</span></td><td>
-                  <form method='post' style='margin:0'>
-                    <button type='submit' name='approve_user' value='".htmlspecialchars($user['email'])."' class='btn btn-success btn-small'>Approve</button>
-                  </form>
-                  </td></tr>";
-              } elseif (empty($user['verified'])) {
-                  echo "<tr><td>".htmlspecialchars($user['email'])."</td><td><span style='color:var(--yellow);'>⏳ Pending Email Verification</span></td><td>—</td></tr>";
-              }
-          }
-          ?>
-        </table>
-        <?php else: ?>
-        <div class="empty-state">
-          <h3>No Pending Users</h3>
-          <p>All users have been processed.</p>
-        </div>
-        <?php endif; ?>
-      </div>
-
-      <!-- Support Tickets Section -->
-      <div class="card ticket-section">
-        <div class="section-header" style="margin-top:0;">
-          <h2>🎫 Support Tickets</h2>
-          <span style="font-size:13px;color:var(--muted);">Sorted by newest first</span>
-        </div>
-        
-        <!-- Search and Filter Controls -->
-        <div class="filter-controls">
-          <input type="text" id="searchTickets" placeholder="🔍 Search by ID, email, subject, or keywords..." class="search-input">
-          <div class="filter-row">
-            <select id="filterStatus" class="filter-select">
-              <option value="all">All Status</option>
-              <option value="open">Open Only</option>
-              <option value="closed">Closed Only</option>
-            </select>
-            <select id="filterPriority" class="filter-select">
-              <option value="all">All Priorities</option>
-              <option value="urgent">🔴 Urgent</option>
-              <option value="high">🟠 High</option>
-              <option value="medium">🟡 Medium</option>
-              <option value="low">🟢 Low</option>
-            </select>
-            <select id="filterCategory" class="filter-select">
-              <option value="all">All Categories</option>
-              <option value="technical">💻 Technical</option>
-              <option value="billing">💳 Billing</option>
-              <option value="account">👤 Account</option>
-              <option value="feature">✨ Feature</option>
-              <option value="other">❓ Other</option>
-            </select>
-            <button id="resetFilters" class="btn btn-secondary btn-small">Reset Filters</button>
-          </div>
-          <div id="filterResults" class="filter-results"></div>
-        </div>
-        
-        <?php
-        $ticketsFile = __DIR__ . '/tickets.json';
-        if (file_exists($ticketsFile)) {
-            $tickets = json_decode(file_get_contents($ticketsFile), true);
-            if (is_array($tickets) && count($tickets) > 0) {
-                // Sort tickets by created_at descending
-                usort($tickets, function($a, $b) {
-                    return strtotime($b['created_at']) - strtotime($a['created_at']);
-                });
-                
-                foreach ($tickets as $ticket) {
-                    $ticketId = htmlspecialchars($ticket['id']);
-                    $replyCount = isset($ticket['replies']) ? count($ticket['replies']) : 0;
-                    ?>
-                    <div class="ticket-card" id="ticket-<?= $ticketId ?>">
-                      <div class="ticket-header">
-                        <div style="flex:1;">
-                          <div class="ticket-title">🎫 <?= htmlspecialchars($ticket['subject']) ?></div>
-                          <div class="ticket-meta">
-                            ID: <strong><?= $ticketId ?></strong> | 
-                            <?php if (!empty($ticket['category'])): ?>
-                              <?php
-                              $categoryIcons = [
-                                'technical' => '💻',
-                                'billing' => '💳',
-                                'account' => '👤',
-                                'feature' => '✨',
-                                'other' => '❓'
-                              ];
-                              $categoryNames = [
-                                'technical' => 'Technical',
-                                'billing' => 'Get a Server',
-                                'account' => 'Account',
-                                'feature' => 'Feature Request',
-                                'other' => 'Other'
-                              ];
-                              $icon = $categoryIcons[$ticket['category']] ?? '📋';
-                              $categoryName = $categoryNames[$ticket['category']] ?? ucfirst($ticket['category']);
-                              echo $icon . ' <strong>' . htmlspecialchars($categoryName) . '</strong> | ';
-                              ?>
-                            <?php endif; ?>
-                            <?php if (!empty($ticket['priority'])): ?>
-                              <?php
-                              $priorityIcons = [
-                                'low' => '🟢',
-                                'medium' => '🟡',
-                                'high' => '🟠',
-                                'urgent' => '🔴'
-                              ];
-                              $pIcon = $priorityIcons[$ticket['priority']] ?? '⚪';
-                              echo $pIcon . ' <strong>' . htmlspecialchars(ucfirst($ticket['priority'])) . '</strong> | ';
-                              ?>
-                            <?php endif; ?>
-                            From: <strong><?= htmlspecialchars($ticket['email']) ?></strong> | 
-                            Created: <?= htmlspecialchars(format_user_time($ticket['created_at'], $ticket['user_timezone'] ?? 'America/New_York')) ?> | 
-                            <?php if ($replyCount > 0): ?>💬 <strong><?= $replyCount ?></strong> replies<?php endif; ?>
-                            <?php if (!empty($ticket['attachment'])): ?> | 📎 Attachment<?php endif; ?>
-                          </div>
-                        </div>
-                        <span class="status-badge status-<?= htmlspecialchars($ticket['status']) ?>">
-                          <?= htmlspecialchars(ucfirst($ticket['status'])) ?>
-                        </span>
-                      </div>
-
-                      <div style="margin-top:15px;">
-                        <a href="/ticket/<?= $ticketId ?>" target="_blank" class="view-ticket-btn">View & Reply to Ticket</a>
-                      </div>
-                    </div>
-                    <?php
-                }
-            } else {
-                echo "<div class='empty-state'><h3>No Support Tickets</h3><p>No support tickets have been submitted yet.</p></div>";
-            }
-        } else {
-            echo "<div class='empty-state'><h3>No Support Tickets</h3><p>No support tickets have been submitted yet.</p></div>";
-        }
-        ?>
       </div>
     <?php endif; ?>
   </div>
@@ -593,12 +473,14 @@ if (isset($_POST['approve_user'])) {
 function hideBanner(){
   const b = document.getElementById('banner');
   if (!b) return;
+  b.classList.add('hide');
   b.classList.remove('show');
-  setTimeout(()=>{ if(b) b.style.left='-500px'; }, 450);
 }
 window.addEventListener('load', ()=>{
   const b = document.getElementById('banner');
   if (!b) return;
+  // Remove hide class and add show class
+  b.classList.remove('hide');
   setTimeout(()=> b.classList.add('show'), 120);
   setTimeout(()=> hideBanner(), 5000);
 });
