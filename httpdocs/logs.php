@@ -13,7 +13,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 $logType = $_GET['type'] ?? 'auth';
 $lines = (int)($_GET['lines'] ?? 200);
 $search = $_GET['search'] ?? '';
-$format = $_GET['format'] ?? 'structured'; // structured or raw
+$format = $_GET['format'] ?? ($_COOKIE['logs_format'] ?? 'structured'); // Use cookie as default
 
 // Get all available log files
 $availableLogs = EnderBitLogger::getLogFiles();
@@ -298,7 +298,11 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
   .stat-value {
     font-size:24px;
     font-weight:700;
-    color:var(--accent);
+    color:var(--accent) !important;
+  }
+
+  .stat-card.clickable-stat .stat-value {
+    color:var(--accent) !important;
   }
 
   .stat-label {
@@ -330,16 +334,18 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
     background: var(--red);
     color: #fff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    margin-left: 12px;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+    margin-top: 8px;
   }
 
   .clear-btn:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
   }
 
   .banner {
@@ -425,7 +431,7 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
         <div class="stat-card clickable-stat <?= $logType === $type ? 'active' : '' ?>" 
              onclick="switchLogType('<?= $type ?>')">
           <div class="stat-label"><?= htmlspecialchars($info['name']) ?></div>
-          <div class="stat-value" style="color:<?= $info['exists'] ? 'var(--accent)' : 'var(--muted)' ?>">
+          <div class="stat-value">
             <?= $info['exists'] ? number_format($info['lines']) : '0' ?>
           </div>
           <div style="font-size:11px;color:var(--muted);">
@@ -461,15 +467,17 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
           <input type="text" name="search" id="search" value="<?= htmlspecialchars($search) ?>" placeholder="Filter logs..." style="flex:1;min-width:200px;" oninput="debounceSearch()">
 
           <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
-          
-          <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
-            <form method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to clear this log file? This action cannot be undone.')">
-              <input type="hidden" name="clear_log" value="<?= $logType ?>">
-              <button type="submit" class="clear-btn">🗑️ Clear Log</button>
-            </form>
-          <?php endif; ?>
         </div>
       </form>
+      
+      <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
+        <div style="margin-top: 12px;">
+          <form method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to clear this log file? This action cannot be undone.')">
+            <input type="hidden" name="clear_log" value="<?= $logType ?>">
+            <button type="submit" class="clear-btn">🗑️ Clear Log</button>
+          </form>
+        </div>
+      <?php endif; ?>
     </div>
 
     <div class="log-container">
@@ -552,6 +560,11 @@ if(saved){
 function loadLogs() {
   const form = document.getElementById('logForm');
   if (form) {
+    // Save format preference to cookie
+    const formatSelect = document.getElementById('format');
+    if (formatSelect) {
+      document.cookie = `logs_format=${formatSelect.value}; path=/; max-age=${30 * 24 * 60 * 60}`; // 30 days
+    }
     form.submit();
   }
 }
@@ -597,7 +610,24 @@ document.addEventListener('DOMContentLoaded', function() {
       hideBanner();
     }, 5000);
   }
+  
+  // Initialize format preference from cookie if not set by URL
+  const formatSelect = document.getElementById('format');
+  if (formatSelect && !new URLSearchParams(window.location.search).has('format')) {
+    const savedFormat = getCookie('logs_format');
+    if (savedFormat && ['structured', 'raw'].includes(savedFormat)) {
+      formatSelect.value = savedFormat;
+    }
+  }
 });
+
+// Helper function to get cookie value
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
 </script>
 </body>
 </html>
