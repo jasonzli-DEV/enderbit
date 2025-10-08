@@ -10,6 +10,7 @@ httpdocs/tokens.json
 httpdocs/tickets.json
 httpdocs/settings.json
 httpdocs/version.json
+httpdocs/dashboard_config.json
 
 # Uploads (user attachments)
 httpdocs/uploads/

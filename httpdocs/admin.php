@@ -122,6 +122,91 @@ if (isset($_POST['approve_user'])) {
     header("Location: admin.php?msg=" . urlencode("User not found.") . "&type=error");
     exit;
 }
+
+// Handle dashboard customization
+$dashboardConfigFile = __DIR__ . '/dashboard_config.json';
+if (isset($_POST['save_dashboard_stats'])) {
+    $config = [
+        'stat1' => $_POST['stat1'] ?? 'last_backup',
+        'stat2' => $_POST['stat2'] ?? 'open_tickets',
+        'stat3' => $_POST['stat3'] ?? 'today_activity',
+        'stat4' => $_POST['stat4'] ?? 'security_alerts'
+    ];
+    file_put_contents($dashboardConfigFile, json_encode($config, JSON_PRETTY_PRINT));
+    header("Location: admin.php?msg=" . urlencode("Dashboard stats updated!") . "&type=success");
+    exit;
+}
+
+// Load dashboard configuration
+$defaultConfig = [
+    'stat1' => 'last_backup',
+    'stat2' => 'open_tickets',
+    'stat3' => 'today_activity',
+    'stat4' => 'security_alerts'
+];
+if (file_exists($dashboardConfigFile)) {
+    $dashboardConfig = json_decode(file_get_contents($dashboardConfigFile), true);
+    if (!is_array($dashboardConfig)) {
+        $dashboardConfig = $defaultConfig;
+    }
+} else {
+    $dashboardConfig = $defaultConfig;
+}
+
+// Define available stat options
+$availableStats = [
+    'last_backup' => [
+        'label' => 'Last Backup',
+        'icon' => '💾',
+        'color' => '#3b82f6'
+    ],
+    'open_tickets' => [
+        'label' => 'Open Tickets',
+        'icon' => '🟢',
+        'color' => '#22c55e'
+    ],
+    'closed_tickets' => [
+        'label' => 'Closed Tickets',
+        'icon' => '🔴',
+        'color' => '#ef4444'
+    ],
+    'total_tickets' => [
+        'label' => 'Total Tickets',
+        'icon' => '📊',
+        'color' => '#8b949e'
+    ],
+    'today_activity' => [
+        'label' => 'Today\'s Activity',
+        'icon' => '📈',
+        'color' => '#3b82f6'
+    ],
+    'security_alerts' => [
+        'label' => 'Security Alerts (24h)',
+        'icon' => '🛡️',
+        'color' => '#ef4444'
+    ],
+    'pending_users' => [
+        'label' => 'Pending Users',
+        'icon' => '👥',
+        'color' => '#f59e0b'
+    ],
+    'total_users' => [
+        'label' => 'Total Users',
+        'icon' => '👤',
+        'color' => '#8b949e'
+    ],
+    'server_time' => [
+        'label' => 'Server Time',
+        'icon' => '🕐',
+        'color' => '#8b949e'
+    ],
+    'uptime' => [
+        'label' => 'System Uptime',
+        'icon' => '⏱️',
+        'color' => '#22c55e'
+    ]
+];
+
 ?>
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -272,94 +357,157 @@ if (isset($_POST['approve_user'])) {
       // Check for updates first
       $hasUpdate = checkForUpdates();
       
-      // Get statistics
-      $tokensFile = __DIR__ . '/tokens.json';
-      $ticketsFile = __DIR__ . '/tickets.json';
-      
-      $pendingUsers = 0;
-      if (file_exists($tokensFile)) {
-          $tokens = json_decode(file_get_contents($tokensFile), true);
-          if (is_array($tokens)) {
-              $pendingUsers = count($tokens);
-          }
-      }
-      
-      // Ticket statistics
-      $openTickets = 0;
-      if (file_exists($ticketsFile)) {
-          $tickets = json_decode(file_get_contents($ticketsFile), true);
-          if (is_array($tickets)) {
-              foreach ($tickets as $ticket) {
-                  if ($ticket['status'] === 'open') $openTickets++;
-              }
-          }
-      }
-      
-      // Get last backup info
-      $lastBackupTime = 'Never';
-      $backupMetadataFile = __DIR__ . '/backups/metadata.json';
-      if (file_exists($backupMetadataFile)) {
-          $metadata = json_decode(file_get_contents($backupMetadataFile), true);
-          if (isset($metadata['sets']) && !empty($metadata['sets'])) {
-              $latestBackup = null;
-              $latestTime = 0;
-              foreach ($metadata['sets'] as $set) {
-                  if ($set['created'] > $latestTime) {
-                      $latestTime = $set['created'];
-                      $latestBackup = $set;
-                  }
-              }
-              if ($latestBackup) {
-                  $timeDiff = time() - $latestBackup['created'];
-                  if ($timeDiff < 3600) {
-                      $lastBackupTime = floor($timeDiff / 60) . 'm ago';
-                  } elseif ($timeDiff < 86400) {
-                      $lastBackupTime = floor($timeDiff / 3600) . 'h ago';
-                  } else {
-                      $lastBackupTime = floor($timeDiff / 86400) . 'd ago';
-                  }
-              }
-          }
-      }
-      
-      // Count today's activity (tickets + registrations)
-      $todayActivity = 0;
-      if (file_exists($ticketsFile)) {
-          $tickets = json_decode(file_get_contents($ticketsFile), true);
-          if (is_array($tickets)) {
-              $today = date('Y-m-d');
-              foreach ($tickets as $ticket) {
-                  if (isset($ticket['created_at']) && strpos($ticket['created_at'], $today) === 0) {
-                      $todayActivity++;
-                  }
-              }
-          }
-      }
-      
-      // Check for security events in last 24 hours
-      $securityAlerts = 0;
-      $securityLogFile = __DIR__ . '/security.log';
-      if (file_exists($securityLogFile)) {
-          $lines = file($securityLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-          $yesterday = time() - 86400;
-          foreach ($lines as $line) {
-              if (strpos($line, '"type":"SECURITY"') !== false) {
-                  // Parse the JSON to check timestamp
-                  $logEntry = json_decode($line, true);
-                  if ($logEntry && isset($logEntry['timestamp'])) {
-                      $logTime = strtotime($logEntry['timestamp']);
-                      if ($logTime >= $yesterday) {
-                          $securityAlerts++;
+      // Function to calculate stat value
+      function calculateStatValue($statType) {
+          $tokensFile = __DIR__ . '/tokens.json';
+          $ticketsFile = __DIR__ . '/tickets.json';
+          
+          switch ($statType) {
+              case 'last_backup':
+                  $backupMetadataFile = __DIR__ . '/backups/metadata.json';
+                  if (file_exists($backupMetadataFile)) {
+                      $metadata = json_decode(file_get_contents($backupMetadataFile), true);
+                      if (isset($metadata['sets']) && !empty($metadata['sets'])) {
+                          $latestTime = 0;
+                          foreach ($metadata['sets'] as $set) {
+                              if ($set['created'] > $latestTime) {
+                                  $latestTime = $set['created'];
+                              }
+                          }
+                          if ($latestTime > 0) {
+                              $timeDiff = time() - $latestTime;
+                              if ($timeDiff < 3600) {
+                                  return floor($timeDiff / 60) . 'm ago';
+                              } elseif ($timeDiff < 86400) {
+                                  return floor($timeDiff / 3600) . 'h ago';
+                              } else {
+                                  return floor($timeDiff / 86400) . 'd ago';
+                              }
+                          }
                       }
                   }
-              }
+                  return 'Never';
+              
+              case 'open_tickets':
+                  if (file_exists($ticketsFile)) {
+                      $tickets = json_decode(file_get_contents($ticketsFile), true);
+                      if (is_array($tickets)) {
+                          $count = 0;
+                          foreach ($tickets as $ticket) {
+                              if ($ticket['status'] === 'open') $count++;
+                          }
+                          return $count;
+                      }
+                  }
+                  return 0;
+              
+              case 'closed_tickets':
+                  if (file_exists($ticketsFile)) {
+                      $tickets = json_decode(file_get_contents($ticketsFile), true);
+                      if (is_array($tickets)) {
+                          $count = 0;
+                          foreach ($tickets as $ticket) {
+                              if ($ticket['status'] === 'closed') $count++;
+                          }
+                          return $count;
+                      }
+                  }
+                  return 0;
+              
+              case 'total_tickets':
+                  if (file_exists($ticketsFile)) {
+                      $tickets = json_decode(file_get_contents($ticketsFile), true);
+                      if (is_array($tickets)) {
+                          return count($tickets);
+                      }
+                  }
+                  return 0;
+              
+              case 'today_activity':
+                  if (file_exists($ticketsFile)) {
+                      $tickets = json_decode(file_get_contents($ticketsFile), true);
+                      if (is_array($tickets)) {
+                          $count = 0;
+                          $today = date('Y-m-d');
+                          foreach ($tickets as $ticket) {
+                              if (isset($ticket['created_at']) && strpos($ticket['created_at'], $today) === 0) {
+                                  $count++;
+                              }
+                          }
+                          return $count;
+                      }
+                  }
+                  return 0;
+              
+              case 'security_alerts':
+                  $securityLogFile = __DIR__ . '/security.log';
+                  if (file_exists($securityLogFile)) {
+                      $lines = file($securityLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                      $yesterday = time() - 86400;
+                      $count = 0;
+                      foreach ($lines as $line) {
+                          if (strpos($line, '"type":"SECURITY"') !== false) {
+                              $logEntry = json_decode($line, true);
+                              if ($logEntry && isset($logEntry['timestamp'])) {
+                                  $logTime = strtotime($logEntry['timestamp']);
+                                  if ($logTime >= $yesterday) {
+                                      $count++;
+                                  }
+                              }
+                          }
+                      }
+                      return $count;
+                  }
+                  return 0;
+              
+              case 'pending_users':
+                  if (file_exists($tokensFile)) {
+                      $tokens = json_decode(file_get_contents($tokensFile), true);
+                      if (is_array($tokens)) {
+                          return count($tokens);
+                      }
+                  }
+                  return 0;
+              
+              case 'total_users':
+                  // Count approved users (you can modify this based on your user storage)
+                  return 0; // Placeholder - implement based on your user system
+              
+              case 'server_time':
+                  return date('g:i A');
+              
+              case 'uptime':
+                  // Simple uptime based on first log entry
+                  $authLogFile = __DIR__ . '/auth.log';
+                  if (file_exists($authLogFile)) {
+                      $lines = file($authLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                      if (!empty($lines)) {
+                          $firstLine = json_decode($lines[0], true);
+                          if ($firstLine && isset($firstLine['timestamp'])) {
+                              $uptime = time() - strtotime($firstLine['timestamp']);
+                              $days = floor($uptime / 86400);
+                              return $days . ' day' . ($days != 1 ? 's' : '');
+                          }
+                      }
+                  }
+                  return 'N/A';
+              
+              default:
+                  return 0;
           }
       }
+      
+      // Get pending users count for management card badge
+      $pendingUsers = calculateStatValue('pending_users');
+      $openTickets = calculateStatValue('open_tickets');
       ?>
       
       <div class="page-header">
         <h1>🎛️ Admin Dashboard</h1>
         <div class="quick-actions">
+          <button onclick="openCustomizeModal()" class="btn btn-secondary">
+            ⚙️ Customize Stats
+          </button>
           <a href="update.php" class="btn btn-secondary">
             🔄 Update<?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>
           </a>
@@ -368,29 +516,31 @@ if (isset($_POST['approve_user'])) {
       
       <!-- Statistics Overview -->
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">�</div>
-          <div class="stat-label">Last Backup</div>
-          <div class="stat-value" style="font-size:20px;"><?= htmlspecialchars($lastBackupTime) ?></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🟢</div>
-          <div class="stat-label">Open Tickets</div>
-          <div class="stat-value" style="color:#22c55e;"><?= $openTickets ?></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">�</div>
-          <div class="stat-label">Today's Activity</div>
-          <div class="stat-value" style="color:#3b82f6;"><?= $todayActivity ?></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">�️</div>
-          <div class="stat-label">Security Alerts (24h)</div>
-          <div class="stat-value" style="color:<?= $securityAlerts > 0 ? '#ef4444' : '#22c55e' ?>;"><?= $securityAlerts ?></div>
-        </div>
+        <?php foreach (['stat1', 'stat2', 'stat3', 'stat4'] as $statKey): ?>
+          <?php 
+          $statType = $dashboardConfig[$statKey];
+          $statInfo = $availableStats[$statType];
+          $statValue = calculateStatValue($statType);
+          $valueStyle = '';
+          
+          // Special styling for certain stats
+          if ($statType === 'last_backup' || $statType === 'server_time') {
+              $valueStyle = 'font-size:20px;';
+          } elseif ($statType === 'security_alerts') {
+              $color = ($statValue > 0) ? '#ef4444' : '#22c55e';
+              $valueStyle = "color:{$color};";
+          } else {
+              $valueStyle = "color:{$statInfo['color']};";
+          }
+          ?>
+          <div class="stat-card">
+            <div class="stat-icon"><?= $statInfo['icon'] ?></div>
+            <div class="stat-label"><?= htmlspecialchars($statInfo['label']) ?></div>
+            <div class="stat-value" style="<?= $valueStyle ?>"><?= htmlspecialchars($statValue) ?></div>
+          </div>
+        <?php endforeach; ?>
       </div>
 
-      <!-- Management Cards -->
       <div class="management-grid">
         <a href="tickets_admin.php" class="management-card">
           <div class="management-icon">🎫</div>
@@ -531,6 +681,60 @@ window.addEventListener('load', ()=>{
   setTimeout(()=> b.classList.add('show'), 120);
   setTimeout(()=> hideBanner(), 5000);
 });
+
+// Dashboard customization modal
+function openCustomizeModal() {
+  document.getElementById('customizeModal').style.display = 'flex';
+}
+
+function closeCustomizeModal() {
+  document.getElementById('customizeModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(e) {
+  const modal = document.getElementById('customizeModal');
+  if (e.target === modal) {
+    closeCustomizeModal();
+  }
+});
 </script>
+
+<!-- Customize Stats Modal -->
+<div id="customizeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:32px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h2 style="margin:0;color:var(--accent);">⚙️ Customize Dashboard Stats</h2>
+      <button onclick="closeCustomizeModal()" style="background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;padding:0;width:32px;height:32px;">×</button>
+    </div>
+    
+    <p style="color:var(--muted);margin-bottom:24px;">Choose what information to display in each of the 4 dashboard statistics panels.</p>
+    
+    <form method="post">
+      <?php foreach (['stat1' => 'Panel 1 (Top Left)', 'stat2' => 'Panel 2 (Top Right)', 'stat3' => 'Panel 3 (Bottom Left)', 'stat4' => 'Panel 4 (Bottom Right)'] as $statKey => $statLabel): ?>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;color:var(--accent);font-weight:600;margin-bottom:8px;"><?= $statLabel ?></label>
+          <select name="<?= $statKey ?>" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--input-border);background:var(--card);color:var(--text);font-size:14px;">
+            <?php foreach ($availableStats as $key => $info): ?>
+              <option value="<?= $key ?>" <?= ($dashboardConfig[$statKey] === $key) ? 'selected' : '' ?>>
+                <?= $info['icon'] ?> <?= htmlspecialchars($info['label']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      <?php endforeach; ?>
+      
+      <div style="display:flex;gap:12px;margin-top:32px;">
+        <button type="submit" name="save_dashboard_stats" class="btn btn-primary" style="flex:1;">
+          💾 Save Changes
+        </button>
+        <button type="button" onclick="closeCustomizeModal()" class="btn btn-secondary" style="flex:1;">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>
