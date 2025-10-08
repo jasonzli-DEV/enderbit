@@ -1,3 +1,11 @@
+# EnderBit Hosting - Apache Configuration
+
+# Custom Error Pages
+ErrorDocument 404 /404.php
+ErrorDocument 500 /500.php
+ErrorDocument 403 /404.php
+ErrorDocument 503 /500.php
+
 RewriteEngine On
 
 # Set default index file
@@ -26,3 +34,23 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} (.+)/$
 RewriteRule ^ %1 [L,R=301]
 
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Disable Directory Browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(config\.php|tokens\.json|tickets\.json|settings\.json|.*\.log|version\.json)$">
+    Require all denied
+</FilesMatch>
+
+# Protect backup directory
+<DirectoryMatch "^.*/backups(/|$)">
+    Require all denied
+</DirectoryMatch>

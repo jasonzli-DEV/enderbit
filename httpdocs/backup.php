@@ -133,9 +133,9 @@ if (isset($_POST['create_backup'])) {
             'timestamp' => $result['timestamp'],
             'description' => $description
         ]);
-        header("Location: backup_new.php?msg=" . urlencode("Backup created successfully") . "&msgtype=success");
+        header("Location: backup.php?msg=" . urlencode("Backup created successfully") . "&msgtype=success");
     } else {
-        header("Location: backup_new.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
+        header("Location: backup.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
     }
     exit;
 }
@@ -153,9 +153,9 @@ if (isset($_POST['update_description'])) {
             'timestamp' => $backupTimestamp,
             'description' => $newDescription
         ]);
-        header("Location: backup_new.php?msg=" . urlencode("Description updated successfully") . "&msgtype=success");
+        header("Location: backup.php?msg=" . urlencode("Description updated successfully") . "&msgtype=success");
     } else {
-        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
+        header("Location: backup.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
@@ -190,12 +190,12 @@ if (isset($_POST['restore_backup_set'])) {
         
         if ($restored > 0) {
             EnderBitLogger::logAdmin('BACKUP_SET_RESTORED', 'RESTORE_BACKUP', ['timestamp' => $backupTimestamp, 'files_restored' => $restored]);
-            header("Location: backup_new.php?msg=" . urlencode("Backup set restored successfully ($restored files)") . "&msgtype=success");
+            header("Location: backup.php?msg=" . urlencode("Backup set restored successfully ($restored files)") . "&msgtype=success");
         } else {
-            header("Location: backup_new.php?msg=" . urlencode("Failed to restore backup set") . "&msgtype=error");
+            header("Location: backup.php?msg=" . urlencode("Failed to restore backup set") . "&msgtype=error");
         }
     } else {
-        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
+        header("Location: backup.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
@@ -225,9 +225,9 @@ if (isset($_POST['delete_backup_set'])) {
         saveMetadata($metadata);
         
         EnderBitLogger::logAdmin('BACKUP_SET_DELETED', 'DELETE_BACKUP', ['timestamp' => $backupTimestamp, 'files_deleted' => $deleted]);
-        header("Location: backup_new.php?msg=" . urlencode("Backup set deleted successfully") . "&msgtype=success");
+        header("Location: backup.php?msg=" . urlencode("Backup set deleted successfully") . "&msgtype=success");
     } else {
-        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
+        header("Location: backup.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
@@ -242,7 +242,7 @@ if (isset($_POST['update_schedule'])) {
     
     saveSchedule($schedule);
     EnderBitLogger::logAdmin('BACKUP_SCHEDULE_UPDATED', 'UPDATE_SCHEDULE', $schedule);
-    header("Location: backup_new.php?msg=" . urlencode("Backup schedule updated successfully") . "&msgtype=success");
+    header("Location: backup.php?msg=" . urlencode("Backup schedule updated successfully") . "&msgtype=success");
     exit;
 }
 
