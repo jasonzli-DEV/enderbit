@@ -192,6 +192,8 @@ if (isset($_POST['approve_user'])) {
   .status-open{background:rgba(34,197,94,.15);color:#22c55e;}
   .status-closed{background:rgba(239,68,68,.15);color:#ef4444;}
   .btn-small{padding:8px 16px;font-size:13px;}
+  .btn-secondary.btn-small{padding:8px 16px;font-size:13px;}
+  button.btn-small{padding:8px 16px;font-size:13px;}
   .view-ticket-btn{display:inline-block;padding:10px 20px;background:var(--accent);color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;transition:all .2s;}
   .view-ticket-btn:hover{opacity:.9;transform:translateY(-1px);}
   .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:32px;}
@@ -268,6 +270,11 @@ if (isset($_POST['approve_user'])) {
         </a>
       </div>
     <?php else: ?>
+      <?php
+      // Check for updates first
+      $hasUpdate = checkForUpdates();
+      ?>
+      
       <div class="page-header">
         <h1>🎛️ Admin Panel</h1>
         <div class="quick-actions">
@@ -306,8 +313,6 @@ if (isset($_POST['approve_user'])) {
               }
           }
       }
-      
-      $hasUpdate = checkForUpdates();
       ?>
       
       <div class="stats-grid">

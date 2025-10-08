@@ -482,8 +482,7 @@ if (is_dir($backupDir)) {
     <div class="header">
       <h1>💾 Backup Management</h1>
       <div>
-        <a href="/logs.php" class="btn btn-secondary">← Back to Logs</a>
-        <a href="/admin.php" class="btn btn-secondary">Admin Panel</a>
+        <a href="/admin.php" class="btn btn-secondary">← Back to Admin Panel</a>
       </div>
     </div>
 

@@ -13,14 +13,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 $logType = $_GET['type'] ?? 'auth';
 $lines = (int)($_GET['lines'] ?? 200);
 $search = $_GET['search'] ?? '';
-$format = $_GET['format'] ?? ($_COOKIE['log          <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
-          
-          <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
-            <button type="button" onclick="clearLogFile('<?= $logType ?>')" class="clear-btn">🗑️ Clear Log</button>
-          <?php endif; ?>
-        </div>
-      </form>
-    </div>? 'structured'); // Use cookie as default
+$format = $_GET['format'] ?? ($_COOKIE['logs_format'] ?? 'structured'); // Use cookie as default
 
 // Get all available log files
 $availableLogs = EnderBitLogger::getLogFiles();
