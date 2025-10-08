@@ -248,8 +248,9 @@ require_once __DIR__ . '/config.php';
     padding:0 24px;
   }
   .faq-item.active .faq-answer {
-    max-height:500px;
+    max-height:2000px;
     padding:0 24px 20px;
+    overflow:visible;
   }
   .faq-answer p {
     color:var(--muted);
@@ -423,7 +424,7 @@ require_once __DIR__ . '/config.php';
         </ul>
         
         <p style="background:var(--input-bg);padding:12px;border-radius:8px;margin-top:12px;">
-          <strong>💡 Note:</strong> Free hosting is provided on a case-by-case basis. We prioritize projects that align with our mission to support learning, creativity, and community building. Commercial projects require paid plans.
+          <strong>💡 Note:</strong> Free hosting is provided on a case-by-case basis. We prioritize projects that align with our mission to support learning, creativity, and community building.
         </p>
       </div>
     </div>
@@ -457,7 +458,7 @@ require_once __DIR__ . '/config.php';
           <li>Create a Support Ticket</li>
           <li>Select Get a Server</li>
           <li>Tell us your game type (Minecraft, Terraria, etc.)</li>
-          <li>Choose your plan and configuration</li>
+          <li>Describe your use case and requirements</li>
           <li>Click <strong>Submit Ticket</strong></li>
         </ol>
         <p>Your server will be ready within 48 hours!</p>
@@ -551,7 +552,7 @@ require_once __DIR__ . '/config.php';
           <li><strong>Reduce view distance</strong> - Lower values in server.properties</li>
           <li><strong>Limit entities</strong> - Too many mobs can cause lag</li>
           <li><strong>Remove heavy plugins/mods</strong> - Some mods are resource-intensive</li>
-          <li><strong>Upgrade your plan</strong> - Consider more RAM if consistently hitting limits</li>
+          <li><strong>Request more resources</strong> - Contact support if consistently hitting limits</li>
           <li><strong>Optimize chunks</strong> - Pre-generate world chunks to reduce load</li>
           <li><strong>Use server optimization mods</strong> - Like Paper, Lithium, or Phosphor</li>
         </ul>
@@ -609,7 +610,7 @@ require_once __DIR__ . '/config.php';
           <li>Wait for backup to complete</li>
           <li>Download backup to your computer for safekeeping</li>
         </ol>
-        <p><strong>Automatic Backups:</strong> Available on premium plans with scheduled backups.</p>
+        <p><strong>Automatic Backups:</strong> Daily automated backups are available based on your server configuration.</p>
       </div>
     </div>
 
@@ -625,14 +626,14 @@ require_once __DIR__ . '/config.php';
           <li>Remove unused worlds or maps</li>
           <li>Clear server logs if they're large</li>
           <li>Remove unnecessary mods/plugins</li>
-          <li>Upgrade to a higher plan if needed</li>
+          <li>Contact support if you need additional storage</li>
         </ul>
         <p><strong>For RAM:</strong></p>
         <ul>
           <li>Restart your server to clear memory</li>
           <li>Reduce render distance and entity limits</li>
           <li>Remove memory-intensive mods</li>
-          <li>Consider upgrading your plan for more RAM</li>
+          <li>Contact support to discuss your server requirements</li>
         </ul>
       </div>
     </div>
@@ -732,7 +733,7 @@ require_once __DIR__ . '/config.php';
           <li>Copy the connection details</li>
           <li>Use in your plugins/mods configuration</li>
         </ol>
-        <p>Each server can have multiple databases depending on your plan.</p>
+        <p>Each server can have multiple databases based on your requirements.</p>
       </div>
     </div>
 
@@ -770,28 +771,6 @@ require_once __DIR__ . '/config.php';
       </div>
     </div>
 
-    <div class="faq-item" data-keywords="upgrade downgrade plan change">
-      <div class="faq-question" onclick="toggleFAQ(this)">
-        <span>Can I upgrade or downgrade my plan?</span>
-        <span class="icon">▼</span>
-      </div>
-      <div class="faq-answer">
-        <p>Yes! You can change your plan at any time:</p>
-        <p><strong>Upgrading:</strong></p>
-        <ul>
-          <li>Instant upgrade - no downtime</li>
-          <li>Pay only the prorated difference for remaining days</li>
-          <li>Your data and settings are preserved</li>
-        </ul>
-        <p><strong>Downgrading:</strong></p>
-        <ul>
-          <li>Takes effect at next billing cycle</li>
-          <li>Ensure your world size fits the new plan limits</li>
-          <li>Contact support if you need immediate downgrade</li>
-        </ul>
-      </div>
-    </div>
-
     <div class="faq-item" data-keywords="backup automatic schedule restore data">
       <div class="faq-question" onclick="toggleFAQ(this)">
         <span>How do automatic backups work?</span>
@@ -801,8 +780,8 @@ require_once __DIR__ . '/config.php';
         <p>EnderBit provides comprehensive backup solutions:</p>
         <p><strong>Automatic Backups:</strong></p>
         <ul>
-          <li>Daily backups of your entire server (included in all plans)</li>
-          <li>Kept for 7 days (Premium plans: 30 days)</li>
+          <li>Daily backups of your entire server</li>
+          <li>Kept for 7 days by default</li>
           <li>Zero-impact on performance - runs during low usage</li>
         </ul>
         <p><strong>Manual Backups:</strong></p>
@@ -830,10 +809,10 @@ require_once __DIR__ . '/config.php';
           <li><strong>North America:</strong> Los Angeles, Dallas, New York, Miami</li>
           <li><strong>Europe:</strong> London, Frankfurt, Amsterdam, Paris</li>
           <li><strong>Asia-Pacific:</strong> Singapore, Tokyo, Sydney</li>
-          <li><strong>South America:</strong> São Paulo (Premium)</li>
+          <li><strong>South America:</strong> São Paulo</li>
         </ul>
         <p>Choose the location closest to your players during signup for the lowest latency!</p>
-        <p><em>Note: Some locations may require Premium or Business plans.</em></p>
+        <p><em>Note: Location availability depends on capacity and your use case.</em></p>
       </div>
     </div>
 
@@ -938,7 +917,130 @@ require_once __DIR__ . '/config.php';
           <li><strong>Low Priority:</strong> Within 48 hours (feature requests, suggestions)</li>
         </ul>
         <p><strong>Business Hours:</strong> 9 AM - 11 PM EST, 7 days a week</p>
-        <p><em>Premium and Business plan customers receive priority support!</em></p>
+        <p><em>All users receive the same level of support - everyone is equal at EnderBit!</em></p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="discord bot hosting nodejs python">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Can I host Discord bots on EnderBit?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! EnderBit supports Discord bot hosting for Node.js and Python bots.</p>
+        <p><strong>Supported Languages:</strong></p>
+        <ul>
+          <li><strong>Node.js:</strong> Discord.js, Eris, Discordie</li>
+          <li><strong>Python:</strong> Discord.py, Hikari, Nextcord</li>
+          <li><strong>Java:</strong> JDA (Java Discord API)</li>
+        </ul>
+        <p><strong>Setup Steps:</strong></p>
+        <ol>
+          <li>Create a new server with "Discord Bot" server type</li>
+          <li>Upload your bot files via FTP or File Manager</li>
+          <li>Configure your bot token in environment variables</li>
+          <li>Start your bot from the control panel</li>
+        </ol>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+          <li>Bot token from Discord Developer Portal</li>
+          <li>Package.json (Node.js) or requirements.txt (Python)</li>
+          <li>Main bot file (index.js, bot.py, etc.)</li>
+        </ul>
+        <p><em>Note: Keep your bot token secure and never share it publicly!</em></p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="ddos protection attack mitigation security">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Do you offer DDoS protection?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! All EnderBit servers come with enterprise-grade DDoS protection included at no extra cost.</p>
+        <p><strong>Protection Features:</strong></p>
+        <ul>
+          <li><strong>Layer 3/4 Protection:</strong> Blocks volumetric attacks up to 100 Gbps</li>
+          <li><strong>Layer 7 Protection:</strong> Application-layer filtering for game packets</li>
+          <li><strong>Automatic Mitigation:</strong> Attacks are detected and blocked within seconds</li>
+          <li><strong>Always-On Protection:</strong> No manual activation needed</li>
+        </ul>
+        <p><strong>What We Protect Against:</strong></p>
+        <ul>
+          <li>UDP/TCP floods</li>
+          <li>SYN floods and amplification attacks</li>
+          <li>Application-layer attacks</li>
+          <li>Bot-based attacks</li>
+        </ul>
+        <p><em>Your server stays online even during attacks. Our infrastructure handles the traffic so you don't have to worry!</em></p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="custom domain subdomain dns cname">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>Can I use a custom domain for my server?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! You can connect a custom domain or subdomain to your EnderBit server.</p>
+        <p><strong>Setup Steps:</strong></p>
+        <ol>
+          <li>Get your server IP from the control panel</li>
+          <li>Go to your domain registrar (Namecheap, GoDaddy, Cloudflare, etc.)</li>
+          <li>Create an A record pointing to your server IP</li>
+          <li>Wait 5-30 minutes for DNS propagation</li>
+          <li>Connect using your custom domain!</li>
+        </ol>
+        <p><strong>Example DNS Configuration:</strong></p>
+        <pre style="background:var(--input-bg);padding:12px;border-radius:6px;overflow-x:auto;">
+Type: A Record
+Name: play (or @ for root domain)
+Value: 123.45.67.89 (your server IP)
+TTL: 3600</pre>
+        <p><strong>For SRV Records (custom port):</strong></p>
+        <pre style="background:var(--input-bg);padding:12px;border-radius:6px;overflow-x:auto;">
+Type: SRV
+Name: _minecraft._tcp.play
+Priority: 0
+Weight: 5
+Port: 25565
+Target: play.yourdomain.com</pre>
+        <p><em>Need help with DNS setup? Create a support ticket with your domain name and we'll assist you!</em></p>
+      </div>
+    </div>
+
+    <div class="faq-item" data-keywords="modpack forge fabric curseforge ftb technic">
+      <div class="faq-question" onclick="toggleFAQ(this)">
+        <span>How do I install modpacks like FTB or CurseForge?</span>
+        <span class="icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Installing modpacks on EnderBit is simple with our one-click installer!</p>
+        <p><strong>Method 1: One-Click Installer (Recommended)</strong></p>
+        <ol>
+          <li>Go to your server control panel</li>
+          <li>Click "Modpacks" in the sidebar</li>
+          <li>Browse popular modpacks (FTB, RLCraft, All The Mods, etc.)</li>
+          <li>Click "Install" - done in 2-5 minutes!</li>
+        </ol>
+        <p><strong>Method 2: Manual Installation</strong></p>
+        <ol>
+          <li>Download modpack server files from CurseForge/FTB</li>
+          <li>Stop your server</li>
+          <li>Upload modpack files via FTP or File Manager</li>
+          <li>Update startup command if needed</li>
+          <li>Start server and wait for world generation</li>
+        </ol>
+        <p><strong>Popular Modpacks Available:</strong></p>
+        <ul>
+          <li>All The Mods 9 (ATM9)</li>
+          <li>RLCraft</li>
+          <li>FTB Inferno</li>
+          <li>Create: Above and Beyond</li>
+          <li>Enigmatica 9</li>
+          <li>Better Minecraft</li>
+        </ul>
+        <p><em>Make sure you have enough RAM! Most modpacks need 4-8GB minimum.</em></p>
       </div>
     </div>
   </div>
