@@ -13,10 +13,14 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 $logType = $_GET['type'] ?? 'auth';
 $lines = (int)($_GET['lines'] ?? 200);
 $search = $_GET['search'] ?? '';
-$format = $_GET['format'] ?? ($_COOKIE['logs_format'] ?? 'structured'); // Use co      <div style="margin-top: 12px;">
-        <button type="button" onclick="backupJsonFiles()" class="btn btn-primary">💾 Backup JSON Files</button>
-        <a href="/backup.php" class="btn btn-secondary" style="margin-left: 8px;">📁 View Backups</a>
-      </div>e as default
+$format = $_GET['format'] ?? ($_COOKIE['log          <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
+          
+          <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
+            <button type="button" onclick="clearLogFile('<?= $logType ?>')" class="clear-btn">🗑️ Clear Log</button>
+          <?php endif; ?>
+        </div>
+      </form>
+    </div>? 'structured'); // Use cookie as default
 
 // Get all available log files
 $availableLogs = EnderBitLogger::getLogFiles();
@@ -85,6 +89,7 @@ if ($format === 'structured') {
 }
 
 // Handle clear log file action
+// Handle clear log file action
 if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
     if (file_exists($logFile)) {
         file_put_contents($logFile, '');
@@ -92,52 +97,6 @@ if (isset($_POST['clear_log']) && $_POST['clear_log'] === $logType) {
         header("Location: logs.php?type=$logType&format=$format&lines=$lines&msg=" . urlencode("Log file cleared successfully") . "&msgtype=success");
         exit;
     }
-}
-
-// Handle backup JSON files action
-if (isset($_POST['backup_json'])) {
-    $backupDir = __DIR__ . '/backups';
-    if (!is_dir($backupDir)) {
-        mkdir($backupDir, 0755, true);
-    }
-    
-    $timestamp = date('Y-m-d_H-i-s');
-    $backupFiles = [];
-    $jsonFiles = ['tokens.json', 'tickets.json', 'settings.json'];
-    
-    foreach ($jsonFiles as $file) {
-        $filePath = __DIR__ . '/' . $file;
-        if (file_exists($filePath)) {
-            $fileType = pathinfo($file, PATHINFO_FILENAME);
-            $backupFileName = $fileType . '_' . $timestamp . '.json';
-            $backupPath = $backupDir . '/' . $backupFileName;
-            if (copy($filePath, $backupPath)) {
-                $backupFiles[] = $backupFileName;
-                
-                // Clean up old backups (keep only last 10 of each type)
-                $existingBackups = glob($backupDir . '/' . $fileType . '_*.json');
-                if (count($existingBackups) > 10) {
-                    // Sort by modification time and remove oldest
-                    usort($existingBackups, function($a, $b) {
-                        return filemtime($a) - filemtime($b);
-                    });
-                    
-                    $toDelete = array_slice($existingBackups, 0, count($existingBackups) - 10);
-                    foreach ($toDelete as $oldBackup) {
-                        @unlink($oldBackup);
-                    }
-                }
-            }
-        }
-    }
-    
-    if (!empty($backupFiles)) {
-        EnderBitLogger::logAdmin('JSON_BACKUP_CREATED', 'BACKUP_JSON_FILES', ['files' => $backupFiles, 'timestamp' => $timestamp]);
-        header("Location: logs.php?type=$logType&format=$format&lines=$lines&msg=" . urlencode("Backup created: " . implode(', ', $backupFiles)) . "&msgtype=success");
-    } else {
-        header("Location: logs.php?type=$logType&format=$format&lines=$lines&msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
-    }
-    exit;
 }
 ?>
 <!doctype html>
@@ -688,24 +647,6 @@ function clearLogFile(logType) {
     input.type = 'hidden';
     input.name = 'clear_log';
     input.value = logType;
-    
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-  }
-}
-
-// Backup JSON files function
-function backupJsonFiles() {
-  if (confirm('Create backup of all JSON files (tokens, tickets, settings)?')) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.style.display = 'none';
-    
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'backup_json';
-    input.value = '1';
     
     form.appendChild(input);
     document.body.appendChild(form);

@@ -10,8 +10,112 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 
 $backupDir = __DIR__ . '/backups';
+$metadataFile = $backupDir . '/metadata.json';
 $msg = $_GET['msg'] ?? '';
 $msgType = $_GET['msgtype'] ?? 'success';
+
+// Load metadata
+function loadMetadata() {
+    global $metadataFile;
+    if (file_exists($metadataFile)) {
+        $data = json_decode(file_get_contents($metadataFile), true);
+        return is_array($data) ? $data : [];
+    }
+    return [];
+}
+
+// Save metadata
+function saveMetadata($metadata) {
+    global $metadataFile, $backupDir;
+    if (!is_dir($backupDir)) {
+        mkdir($backupDir, 0755, true);
+    }
+    file_put_contents($metadataFile, json_encode($metadata, JSON_PRETTY_PRINT));
+}
+
+// Handle backup creation
+if (isset($_POST['create_backup'])) {
+    if (!is_dir($backupDir)) {
+        mkdir($backupDir, 0755, true);
+    }
+    
+    $timestamp = date('Y-m-d_H-i-s');
+    $description = trim($_POST['description'] ?? '');
+    $backupFiles = [];
+    $jsonFiles = ['tokens.json', 'tickets.json', 'settings.json'];
+    $metadata = loadMetadata();
+    
+    foreach ($jsonFiles as $file) {
+        $filePath = __DIR__ . '/' . $file;
+        if (file_exists($filePath)) {
+            $fileType = pathinfo($file, PATHINFO_FILENAME);
+            $backupFileName = $fileType . '_' . $timestamp . '.json';
+            $backupPath = $backupDir . '/' . $backupFileName;
+            if (copy($filePath, $backupPath)) {
+                $backupFiles[] = $backupFileName;
+                
+                // Store metadata
+                $metadata[$backupFileName] = [
+                    'description' => $description,
+                    'created' => time(),
+                    'type' => $fileType
+                ];
+                
+                // Clean up old backups (keep only last 10 of each type)
+                $existingBackups = glob($backupDir . '/' . $fileType . '_*.json');
+                if (count($existingBackups) > 10) {
+                    usort($existingBackups, function($a, $b) {
+                        return filemtime($a) - filemtime($b);
+                    });
+                    
+                    $toDelete = array_slice($existingBackups, 0, count($existingBackups) - 10);
+                    foreach ($toDelete as $oldBackup) {
+                        $oldBackupName = basename($oldBackup);
+                        @unlink($oldBackup);
+                        // Remove from metadata
+                        if (isset($metadata[$oldBackupName])) {
+                            unset($metadata[$oldBackupName]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    saveMetadata($metadata);
+    
+    if (!empty($backupFiles)) {
+        EnderBitLogger::logAdmin('JSON_BACKUP_CREATED', 'BACKUP_JSON_FILES', [
+            'files' => $backupFiles, 
+            'timestamp' => $timestamp,
+            'description' => $description
+        ]);
+        header("Location: backup.php?msg=" . urlencode("Backup created successfully: " . implode(', ', $backupFiles)) . "&msgtype=success");
+    } else {
+        header("Location: backup.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
+    }
+    exit;
+}
+
+// Handle description update
+if (isset($_POST['update_description'])) {
+    $backupFile = $_POST['backup_file'];
+    $newDescription = trim($_POST['new_description'] ?? '');
+    $metadata = loadMetadata();
+    
+    if (isset($metadata[$backupFile])) {
+        $metadata[$backupFile]['description'] = $newDescription;
+        saveMetadata($metadata);
+        EnderBitLogger::logAdmin('BACKUP_DESCRIPTION_UPDATED', 'UPDATE_BACKUP_DESCRIPTION', [
+            'backup_file' => $backupFile,
+            'description' => $newDescription
+        ]);
+        header("Location: backup.php?msg=" . urlencode("Description updated successfully") . "&msgtype=success");
+    } else {
+        header("Location: backup.php?msg=" . urlencode("Backup file not found in metadata") . "&msgtype=error");
+    }
+    exit;
+}
 
 // Handle backup restore
 if (isset($_POST['restore_backup'])) {
@@ -53,6 +157,13 @@ if (isset($_POST['delete_backup'])) {
     
     if (file_exists($backupPath)) {
         if (unlink($backupPath)) {
+            // Remove from metadata
+            $metadata = loadMetadata();
+            if (isset($metadata[$backupFile])) {
+                unset($metadata[$backupFile]);
+                saveMetadata($metadata);
+            }
+            
             EnderBitLogger::logAdmin('BACKUP_DELETED', 'DELETE_BACKUP', ['backup_file' => $backupFile]);
             header("Location: backup.php?msg=" . urlencode("Backup deleted successfully") . "&msgtype=success");
         } else {
@@ -66,6 +177,8 @@ if (isset($_POST['delete_backup'])) {
 
 // Get all backup files
 $backups = [];
+$metadata = loadMetadata();
+
 if (is_dir($backupDir)) {
     $files = scandir($backupDir);
     foreach ($files as $file) {
@@ -77,7 +190,8 @@ if (is_dir($backupDir)) {
                 'modified' => filemtime($filePath),
                 'type' => strpos($file, 'tokens_') === 0 ? 'User Tokens' : 
                           (strpos($file, 'tickets_') === 0 ? 'Support Tickets' : 
-                          (strpos($file, 'settings_') === 0 ? 'Admin Settings' : 'Unknown'))
+                          (strpos($file, 'settings_') === 0 ? 'Admin Settings' : 'Unknown')),
+                'description' => $metadata[$file]['description'] ?? ''
             ];
         }
     }
@@ -269,6 +383,91 @@ if (is_dir($backupDir)) {
     padding:6px 12px;
     font-size:12px;
   }
+
+  .create-backup-card {
+    background:var(--card);
+    border:1px solid var(--input-border);
+    border-radius:12px;
+    padding:24px;
+    margin-bottom:24px;
+  }
+
+  .create-backup-card h2 {
+    color:var(--accent);
+    font-size:20px;
+    margin-bottom:16px;
+  }
+
+  .form-group {
+    margin-bottom:16px;
+  }
+
+  .form-group label {
+    display:block;
+    margin-bottom:8px;
+    font-weight:600;
+    color:var(--text);
+  }
+
+  .form-group input,
+  .form-group textarea {
+    width:100%;
+    padding:12px;
+    border:1px solid var(--input-border);
+    border-radius:8px;
+    background:var(--input-bg);
+    color:var(--text);
+    font-family:inherit;
+    font-size:14px;
+  }
+
+  .form-group textarea {
+    resize:vertical;
+    min-height:80px;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline:none;
+    border-color:var(--accent);
+  }
+
+  .description-cell {
+    max-width:300px;
+    word-wrap:break-word;
+    font-style:italic;
+    color:var(--muted);
+  }
+
+  .description-cell:empty:before {
+    content:"No description";
+    opacity:0.5;
+  }
+
+  .edit-desc-form {
+    display:none;
+    margin-top:8px;
+  }
+
+  .edit-desc-form.active {
+    display:block;
+  }
+
+  .edit-desc-form input {
+    width:100%;
+    padding:6px;
+    margin-bottom:8px;
+    border:1px solid var(--input-border);
+    border-radius:4px;
+    background:var(--input-bg);
+    color:var(--text);
+  }
+
+  .edit-desc-form .btn {
+    padding:4px 8px;
+    font-size:11px;
+    margin-right:4px;
+  }
 </style>
 </head>
 <body>
@@ -288,6 +487,25 @@ if (is_dir($backupDir)) {
       </div>
     </div>
 
+    <!-- Create Backup Card -->
+    <div class="create-backup-card">
+      <h2>📦 Create New Backup</h2>
+      <form method="post">
+        <div class="form-group">
+          <label for="description">Backup Description (Optional)</label>
+          <textarea 
+            id="description" 
+            name="description" 
+            placeholder="e.g., Before major update, End of month backup, etc."
+          ></textarea>
+        </div>
+        <button type="submit" name="create_backup" class="btn btn-primary">💾 Create Backup</button>
+        <p style="margin-top:12px; font-size:13px; color:var(--muted);">
+          This will backup: tokens.json, tickets.json, and settings.json
+        </p>
+      </form>
+    </div>
+
     <?php if (empty($backups)): ?>
       <div class="backup-table">
         <div class="empty-state">
@@ -302,6 +520,7 @@ if (is_dir($backupDir)) {
             <tr>
               <th>File Name</th>
               <th>Type</th>
+              <th>Description</th>
               <th>Size</th>
               <th>Created</th>
               <th>Actions</th>
@@ -318,6 +537,18 @@ if (is_dir($backupDir)) {
                   ?>">
                     <?= htmlspecialchars($backup['type']) ?>
                   </span>
+                </td>
+                <td class="description-cell">
+                  <div class="desc-display" id="desc-<?= md5($backup['name']) ?>">
+                    <?= htmlspecialchars($backup['description']) ?>
+                    <button type="button" onclick="toggleEditDesc('<?= md5($backup['name']) ?>')" class="btn btn-secondary" style="margin-left:8px; padding:2px 8px; font-size:11px;">✏️ Edit</button>
+                  </div>
+                  <form method="post" class="edit-desc-form" id="edit-<?= md5($backup['name']) ?>">
+                    <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['name']) ?>">
+                    <input type="text" name="new_description" value="<?= htmlspecialchars($backup['description']) ?>" placeholder="Enter description">
+                    <button type="submit" name="update_description" class="btn btn-primary">💾 Save</button>
+                    <button type="button" onclick="toggleEditDesc('<?= md5($backup['name']) ?>')" class="btn btn-secondary">✖ Cancel</button>
+                  </form>
                 </td>
                 <td><?= number_format($backup['size'] / 1024, 1) ?> KB</td>
                 <td><?= date('M j, Y, g:i A', $backup['modified']) ?></td>
@@ -371,6 +602,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 5000);
   }
 });
+
+// Toggle edit description form
+function toggleEditDesc(id) {
+  const display = document.getElementById('desc-' + id);
+  const form = document.getElementById('edit-' + id);
+  
+  if (form.classList.contains('active')) {
+    form.classList.remove('active');
+    display.style.display = 'block';
+  } else {
+    form.classList.add('active');
+    display.style.display = 'none';
+  }
+}
 </script>
 </body>
 </html>
