@@ -11,6 +11,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 $backupDir = __DIR__ . '/backups';
 $metadataFile = $backupDir . '/metadata.json';
+$scheduleFile = $backupDir . '/schedule.json';
 $msg = $_GET['msg'] ?? '';
 $msgType = $_GET['msgtype'] ?? 'success';
 
@@ -33,14 +34,57 @@ function saveMetadata($metadata) {
     file_put_contents($metadataFile, json_encode($metadata, JSON_PRETTY_PRINT));
 }
 
-// Handle backup creation
-if (isset($_POST['create_backup'])) {
+// Load schedule settings
+function loadSchedule() {
+    global $scheduleFile;
+    if (file_exists($scheduleFile)) {
+        $data = json_decode(file_get_contents($scheduleFile), true);
+        return is_array($data) ? $data : ['enabled' => false, 'frequency' => 'daily', 'last_run' => null];
+    }
+    return ['enabled' => false, 'frequency' => 'daily', 'last_run' => null];
+}
+
+// Save schedule settings
+function saveSchedule($schedule) {
+    global $scheduleFile, $backupDir;
+    if (!is_dir($backupDir)) {
+        mkdir($backupDir, 0755, true);
+    }
+    file_put_contents($scheduleFile, json_encode($schedule, JSON_PRETTY_PRINT));
+}
+
+// Check if scheduled backup should run
+function checkScheduledBackup() {
+    $schedule = loadSchedule();
+    if (!$schedule['enabled']) return false;
+    
+    $lastRun = $schedule['last_run'] ?? null;
+    if (!$lastRun) return true;
+    
+    $now = time();
+    $lastRunTime = strtotime($lastRun);
+    
+    switch ($schedule['frequency']) {
+        case 'hourly':
+            return ($now - $lastRunTime) >= 3600; // 1 hour
+        case 'daily':
+            return ($now - $lastRunTime) >= 86400; // 24 hours
+        case 'weekly':
+            return ($now - $lastRunTime) >= 604800; // 7 days
+        default:
+            return false;
+    }
+}
+
+// Perform backup
+function performBackup($description = '') {
+    global $backupDir;
+    
     if (!is_dir($backupDir)) {
         mkdir($backupDir, 0755, true);
     }
     
     $timestamp = date('Y-m-d_H-i-s');
-    $description = trim($_POST['description'] ?? '');
     $backupFiles = [];
     $jsonFiles = ['tokens.json', 'tickets.json', 'settings.json'];
     $metadata = loadMetadata();
@@ -54,151 +98,187 @@ if (isset($_POST['create_backup'])) {
             if (copy($filePath, $backupPath)) {
                 $backupFiles[] = $backupFileName;
                 
-                // Store metadata
+                // Store metadata for individual file
                 $metadata[$backupFileName] = [
-                    'description' => $description,
+                    'timestamp' => $timestamp,
                     'created' => time(),
                     'type' => $fileType
                 ];
-                
-                // Clean up old backups (keep only last 10 of each type)
-                $existingBackups = glob($backupDir . '/' . $fileType . '_*.json');
-                if (count($existingBackups) > 10) {
-                    usort($existingBackups, function($a, $b) {
-                        return filemtime($a) - filemtime($b);
-                    });
-                    
-                    $toDelete = array_slice($existingBackups, 0, count($existingBackups) - 10);
-                    foreach ($toDelete as $oldBackup) {
-                        $oldBackupName = basename($oldBackup);
-                        @unlink($oldBackup);
-                        // Remove from metadata
-                        if (isset($metadata[$oldBackupName])) {
-                            unset($metadata[$oldBackupName]);
-                        }
-                    }
-                }
             }
         }
     }
     
+    // Store backup set metadata
+    if (!empty($backupFiles)) {
+        $metadata['sets'][$timestamp] = [
+            'description' => $description,
+            'created' => time(),
+            'files' => $backupFiles
+        ];
+    }
+    
     saveMetadata($metadata);
     
-    if (!empty($backupFiles)) {
+    return ['success' => !empty($backupFiles), 'files' => $backupFiles, 'timestamp' => $timestamp];
+}
+
+// Handle backup creation
+if (isset($_POST['create_backup'])) {
+    $description = trim($_POST['description'] ?? '');
+    $result = performBackup($description);
+    
+    if ($result['success']) {
         EnderBitLogger::logAdmin('JSON_BACKUP_CREATED', 'BACKUP_JSON_FILES', [
-            'files' => $backupFiles, 
-            'timestamp' => $timestamp,
+            'files' => $result['files'], 
+            'timestamp' => $result['timestamp'],
             'description' => $description
         ]);
-        header("Location: backup.php?msg=" . urlencode("Backup created successfully: " . implode(', ', $backupFiles)) . "&msgtype=success");
+        header("Location: backup_new.php?msg=" . urlencode("Backup created successfully") . "&msgtype=success");
     } else {
-        header("Location: backup.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
+        header("Location: backup_new.php?msg=" . urlencode("No JSON files found to backup") . "&msgtype=error");
     }
     exit;
 }
 
 // Handle description update
 if (isset($_POST['update_description'])) {
-    $backupFile = $_POST['backup_file'];
+    $backupTimestamp = $_POST['backup_timestamp'];
     $newDescription = trim($_POST['new_description'] ?? '');
     $metadata = loadMetadata();
     
-    if (isset($metadata[$backupFile])) {
-        $metadata[$backupFile]['description'] = $newDescription;
+    if (isset($metadata['sets'][$backupTimestamp])) {
+        $metadata['sets'][$backupTimestamp]['description'] = $newDescription;
         saveMetadata($metadata);
         EnderBitLogger::logAdmin('BACKUP_DESCRIPTION_UPDATED', 'UPDATE_BACKUP_DESCRIPTION', [
-            'backup_file' => $backupFile,
+            'timestamp' => $backupTimestamp,
             'description' => $newDescription
         ]);
-        header("Location: backup.php?msg=" . urlencode("Description updated successfully") . "&msgtype=success");
+        header("Location: backup_new.php?msg=" . urlencode("Description updated successfully") . "&msgtype=success");
     } else {
-        header("Location: backup.php?msg=" . urlencode("Backup file not found in metadata") . "&msgtype=error");
+        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
 
-// Handle backup restore
-if (isset($_POST['restore_backup'])) {
-    $backupFile = $_POST['backup_file'];
-    $backupPath = $backupDir . '/' . $backupFile;
+// Handle backup set restoration
+if (isset($_POST['restore_backup_set'])) {
+    $backupTimestamp = $_POST['backup_timestamp'];
+    $metadata = loadMetadata();
     
-    if (file_exists($backupPath) && pathinfo($backupFile, PATHINFO_EXTENSION) === 'json') {
-        // Determine original file name
-        $originalFile = '';
-        if (strpos($backupFile, 'tokens_') === 0) {
-            $originalFile = 'tokens.json';
-        } elseif (strpos($backupFile, 'tickets_') === 0) {
-            $originalFile = 'tickets.json';
-        } elseif (strpos($backupFile, 'settings_') === 0) {
-            $originalFile = 'settings.json';
+    if (isset($metadata['sets'][$backupTimestamp])) {
+        $files = $metadata['sets'][$backupTimestamp]['files'];
+        $restored = 0;
+        
+        foreach ($files as $backupFile) {
+            $backupPath = $backupDir . '/' . $backupFile;
+            
+            if (file_exists($backupPath)) {
+                $originalFile = '';
+                if (strpos($backupFile, 'tokens_') === 0) {
+                    $originalFile = 'tokens.json';
+                } elseif (strpos($backupFile, 'tickets_') === 0) {
+                    $originalFile = 'tickets.json';
+                } elseif (strpos($backupFile, 'settings_') === 0) {
+                    $originalFile = 'settings.json';
+                }
+                
+                if ($originalFile && copy($backupPath, __DIR__ . '/' . $originalFile)) {
+                    $restored++;
+                }
+            }
         }
         
-        if ($originalFile) {
-            $originalPath = __DIR__ . '/' . $originalFile;
-            if (copy($backupPath, $originalPath)) {
-                EnderBitLogger::logAdmin('BACKUP_RESTORED', 'RESTORE_BACKUP', ['backup_file' => $backupFile, 'original_file' => $originalFile]);
-                header("Location: backup.php?msg=" . urlencode("Backup restored successfully: $originalFile") . "&msgtype=success");
-            } else {
-                header("Location: backup.php?msg=" . urlencode("Failed to restore backup") . "&msgtype=error");
-            }
+        if ($restored > 0) {
+            EnderBitLogger::logAdmin('BACKUP_SET_RESTORED', 'RESTORE_BACKUP', ['timestamp' => $backupTimestamp, 'files_restored' => $restored]);
+            header("Location: backup_new.php?msg=" . urlencode("Backup set restored successfully ($restored files)") . "&msgtype=success");
         } else {
-            header("Location: backup.php?msg=" . urlencode("Invalid backup file format") . "&msgtype=error");
+            header("Location: backup_new.php?msg=" . urlencode("Failed to restore backup set") . "&msgtype=error");
         }
     } else {
-        header("Location: backup.php?msg=" . urlencode("Backup file not found") . "&msgtype=error");
+        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
 
-// Handle backup deletion
-if (isset($_POST['delete_backup'])) {
-    $backupFile = $_POST['backup_file'];
-    $backupPath = $backupDir . '/' . $backupFile;
+// Handle backup set deletion
+if (isset($_POST['delete_backup_set'])) {
+    $backupTimestamp = $_POST['backup_timestamp'];
+    $metadata = loadMetadata();
     
-    if (file_exists($backupPath)) {
-        if (unlink($backupPath)) {
-            // Remove from metadata
-            $metadata = loadMetadata();
-            if (isset($metadata[$backupFile])) {
-                unset($metadata[$backupFile]);
-                saveMetadata($metadata);
+    if (isset($metadata['sets'][$backupTimestamp])) {
+        $files = $metadata['sets'][$backupTimestamp]['files'];
+        $deleted = 0;
+        
+        foreach ($files as $backupFile) {
+            $backupPath = $backupDir . '/' . $backupFile;
+            if (file_exists($backupPath) && unlink($backupPath)) {
+                $deleted++;
+                // Remove individual file metadata
+                if (isset($metadata[$backupFile])) {
+                    unset($metadata[$backupFile]);
+                }
             }
-            
-            EnderBitLogger::logAdmin('BACKUP_DELETED', 'DELETE_BACKUP', ['backup_file' => $backupFile]);
-            header("Location: backup.php?msg=" . urlencode("Backup deleted successfully") . "&msgtype=success");
-        } else {
-            header("Location: backup.php?msg=" . urlencode("Failed to delete backup") . "&msgtype=error");
         }
+        
+        // Remove set metadata
+        unset($metadata['sets'][$backupTimestamp]);
+        saveMetadata($metadata);
+        
+        EnderBitLogger::logAdmin('BACKUP_SET_DELETED', 'DELETE_BACKUP', ['timestamp' => $backupTimestamp, 'files_deleted' => $deleted]);
+        header("Location: backup_new.php?msg=" . urlencode("Backup set deleted successfully") . "&msgtype=success");
     } else {
-        header("Location: backup.php?msg=" . urlencode("Backup file not found") . "&msgtype=error");
+        header("Location: backup_new.php?msg=" . urlencode("Backup set not found") . "&msgtype=error");
     }
     exit;
 }
 
-// Get all backup files
-$backups = [];
+// Handle schedule update
+if (isset($_POST['update_schedule'])) {
+    $schedule = [
+        'enabled' => isset($_POST['schedule_enabled']),
+        'frequency' => $_POST['schedule_frequency'] ?? 'daily',
+        'last_run' => loadSchedule()['last_run'] ?? null
+    ];
+    
+    saveSchedule($schedule);
+    EnderBitLogger::logAdmin('BACKUP_SCHEDULE_UPDATED', 'UPDATE_SCHEDULE', $schedule);
+    header("Location: backup_new.php?msg=" . urlencode("Backup schedule updated successfully") . "&msgtype=success");
+    exit;
+}
+
+// Check for scheduled backup
+if (checkScheduledBackup()) {
+    $result = performBackup('Scheduled backup');
+    if ($result['success']) {
+        $schedule = loadSchedule();
+        $schedule['last_run'] = date('Y-m-d H:i:s');
+        saveSchedule($schedule);
+        EnderBitLogger::logAdmin('SCHEDULED_BACKUP_COMPLETED', 'BACKUP_JSON_FILES', [
+            'files' => $result['files'],
+            'timestamp' => $result['timestamp']
+        ]);
+    }
+}
+
+// Get backup sets
+$backupSets = [];
 $metadata = loadMetadata();
+$schedule = loadSchedule();
 
-if (is_dir($backupDir)) {
-    $files = scandir($backupDir);
-    foreach ($files as $file) {
-        if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'json') {
-            $filePath = $backupDir . '/' . $file;
-            $backups[] = [
-                'name' => $file,
-                'size' => filesize($filePath),
-                'modified' => filemtime($filePath),
-                'type' => strpos($file, 'tokens_') === 0 ? 'User Tokens' : 
-                          (strpos($file, 'tickets_') === 0 ? 'Support Tickets' : 
-                          (strpos($file, 'settings_') === 0 ? 'Admin Settings' : 'Unknown')),
-                'description' => $metadata[$file]['description'] ?? ''
-            ];
-        }
+if (isset($metadata['sets']) && is_array($metadata['sets'])) {
+    foreach ($metadata['sets'] as $timestamp => $setData) {
+        $backupSets[] = [
+            'timestamp' => $timestamp,
+            'description' => $setData['description'] ?? '',
+            'created' => $setData['created'] ?? 0,
+            'files' => $setData['files'] ?? [],
+            'file_count' => count($setData['files'] ?? [])
+        ];
     }
     
-    // Sort by modification time (newest first)
-    usort($backups, function($a, $b) {
-        return $b['modified'] - $a['modified'];
+    // Sort by created time (newest first)
+    usort($backupSets, function($a, $b) {
+        return $b['created'] - $a['created'];
     });
 }
 ?>
@@ -214,11 +294,6 @@ if (is_dir($backupDir)) {
     --bg:#0d1117; --card:#161b22; --accent:#58a6ff; --primary:#1f6feb;
     --muted:#8b949e; --green:#238636; --red:#f85149; --yellow:#f0883e;
     --text:#e6eef8; --input-bg:#0e1418; --input-border:#232629;
-  }
-  [data-theme="light"] {
-    --bg:#eff6ff; --card:#ffffff; --accent:#3b82f6; --primary:#2563eb;
-    --muted:#64748b; --green:#16a34a; --red:#dc2626; --yellow:#ea580c;
-    --text:#1e3a8a; --input-bg:#ffffff; --input-border:#bfdbfe;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -248,154 +323,36 @@ if (is_dir($backupDir)) {
   .btn {
     padding:10px 20px;
     border-radius:8px;
-    border:none;
     font-weight:600;
     font-size:14px;
+    border:none;
     cursor:pointer;
+    transition:all .2s;
     text-decoration:none;
     display:inline-block;
-    transition:all .2s;
   }
 
-  .btn-primary {
-    background:var(--primary);
-    color:#fff;
-  }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-secondary { background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); }
+  .btn-success { background:var(--green); color:#fff; }
+  .btn-danger { background:var(--red); color:#fff; }
+  
+  .btn:hover { opacity:.9; transform:translateY(-1px); }
+  .btn-small { padding:6px 12px; font-size:12px; }
 
-  .btn-secondary {
-    background:var(--card);
-    color:var(--text);
-    border:1px solid var(--input-border);
-  }
-
-  .btn-danger {
-    background:var(--red);
-    color:#fff;
-  }
-
-  .btn-success {
-    background:var(--green);
-    color:#fff;
-  }
-
-  .btn:hover {
-    opacity:.9;
-    transform:translateY(-1px);
-  }
-
-  .backup-table {
-    background:var(--card);
-    border:1px solid var(--input-border);
-    border-radius:12px;
-    overflow:hidden;
-  }
-
-  table {
-    width:100%;
-    border-collapse:collapse;
-  }
-
-  th, td {
-    padding:16px;
-    text-align:left;
-    border-bottom:1px solid var(--input-border);
-  }
-
-  th {
-    background:var(--input-bg);
-    font-weight:600;
-    color:var(--accent);
-  }
-
-  tr:last-child td {
-    border-bottom:none;
-  }
-
-  tr:hover {
-    background:var(--input-bg);
-  }
-
-  .file-type {
-    padding:4px 8px;
-    border-radius:4px;
-    font-size:12px;
-    font-weight:600;
-  }
-
-  .type-tokens { background:var(--primary); color:#fff; }
-  .type-tickets { background:var(--yellow); color:#000; }
-  .type-settings { background:var(--green); color:#fff; }
-
-  .banner {
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    padding:12px 20px;
-    color:#fff;
-    z-index:1000;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    transform:translateY(-100%);
-    transition:transform 0.3s ease;
-  }
-
-  .banner.show {
-    transform:translateY(0);
-  }
-
-  .banner.success {
-    background:var(--green);
-  }
-
-  .banner.error {
-    background:var(--red);
-  }
-
-  .banner .close {
-    cursor:pointer;
-    font-weight:700;
-    opacity:0.8;
-  }
-
-  .banner .close:hover {
-    opacity:1;
-  }
-
-  .empty-state {
-    text-align:center;
-    padding:60px 20px;
-    color:var(--muted);
-  }
-
-  .empty-state h3 {
-    margin-bottom:12px;
-    color:var(--text);
-  }
-
-  .action-buttons {
-    display:flex;
-    gap:8px;
-  }
-
-  .action-buttons .btn {
-    padding:6px 12px;
-    font-size:12px;
-  }
-
-  .create-backup-card {
+  .card {
     background:var(--card);
     border:1px solid var(--input-border);
     border-radius:12px;
     padding:24px;
     margin-bottom:24px;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
   }
 
-  .create-backup-card h2 {
+  .card h2 {
     color:var(--accent);
-    font-size:20px;
     margin-bottom:16px;
+    font-size:20px;
   }
 
   .form-group {
@@ -410,7 +367,8 @@ if (is_dir($backupDir)) {
   }
 
   .form-group input,
-  .form-group textarea {
+  .form-group textarea,
+  .form-group select {
     width:100%;
     padding:12px;
     border:1px solid var(--input-border);
@@ -427,52 +385,148 @@ if (is_dir($backupDir)) {
   }
 
   .form-group input:focus,
-  .form-group textarea:focus {
+  .form-group textarea:focus,
+  .form-group select:focus {
     outline:none;
     border-color:var(--accent);
   }
 
-  .description-cell {
-    max-width:300px;
-    word-wrap:break-word;
-    font-style:italic;
-    color:var(--muted);
+  .form-group input[type="checkbox"] {
+    width:auto;
+    margin-right:8px;
   }
 
-  .description-cell:empty:before {
+  .backup-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(350px,1fr));
+    gap:20px;
+  }
+
+  .backup-set-card {
+    background:var(--card);
+    border:1px solid var(--input-border);
+    border-radius:12px;
+    padding:20px;
+    transition:all .3s;
+  }
+
+  .backup-set-card:hover {
+    transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(88,166,255,.15);
+    border-color:var(--accent);
+  }
+
+  .backup-time {
+    font-size:18px;
+    font-weight:700;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+
+  .backup-date {
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:12px;
+  }
+
+  .backup-description {
+    background:var(--input-bg);
+    padding:12px;
+    border-radius:6px;
+    margin-bottom:12px;
+    min-height:40px;
+    font-style:italic;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .backup-description:empty:before {
     content:"No description";
     opacity:0.5;
   }
 
-  .edit-desc-form {
-    display:none;
-    margin-top:8px;
+  .backup-files {
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:12px;
+    padding:8px;
+    background:var(--input-bg);
+    border-radius:6px;
   }
 
-  .edit-desc-form.active {
+  .backup-actions {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .edit-form {
+    display:none;
+    margin-top:12px;
+    padding:12px;
+    background:var(--input-bg);
+    border-radius:6px;
+  }
+
+  .edit-form.active {
     display:block;
   }
 
-  .edit-desc-form input {
+  .edit-form input {
     width:100%;
-    padding:6px;
+    padding:8px;
     margin-bottom:8px;
     border:1px solid var(--input-border);
     border-radius:4px;
-    background:var(--input-bg);
+    background:var(--card);
     color:var(--text);
   }
 
-  .edit-desc-form .btn {
-    padding:4px 8px;
-    font-size:11px;
-    margin-right:4px;
+  .empty-state {
+    text-align:center;
+    padding:60px 20px;
+    color:var(--muted);
+  }
+
+  .empty-state h3 {
+    color:var(--text);
+    margin-bottom:8px;
+    font-size:20px;
+  }
+
+  /* Banner System */
+  .banner {
+    position:fixed;
+    left:-500px;
+    top:20px;
+    padding:14px 20px;
+    border-radius:10px;
+    min-width:280px;
+    max-width:400px;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:left .45s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index:2200;
+  }
+  .banner.show { left:20px; }
+  .banner.hide { left:-500px !important; }
+  .banner.success { background:var(--green); color:#fff; }
+  .banner.error { background:var(--red); color:#fff; }
+  .banner .close { cursor:pointer; font-weight:700; color:#fff; padding-left:12px; opacity:0.8; }
+  .banner .close:hover { opacity:1; }
+
+  @media (max-width: 768px) {
+    .backup-grid {
+      grid-template-columns:1fr;
+    }
   }
 </style>
 </head>
 <body>
   <?php if ($msg): ?>
-    <div id="banner" class="banner <?= htmlspecialchars($msgType) ?> show">
+    <div id="banner" class="banner <?= htmlspecialchars($msgType) ?> hide">
       <span><?= htmlspecialchars($msg) ?></span>
       <span class="close" onclick="hideBanner()">×</span>
     </div>
@@ -487,7 +541,7 @@ if (is_dir($backupDir)) {
     </div>
 
     <!-- Create Backup Card -->
-    <div class="create-backup-card">
+    <div class="card">
       <h2>📦 Create New Backup</h2>
       <form method="post">
         <div class="form-group">
@@ -505,91 +559,112 @@ if (is_dir($backupDir)) {
       </form>
     </div>
 
-    <?php if (empty($backups)): ?>
-      <div class="backup-table">
+    <!-- Schedule Backup Card -->
+    <div class="card">
+      <h2>⏰ Scheduled Backups</h2>
+      <form method="post">
+        <div class="form-group">
+          <label>
+            <input type="checkbox" name="schedule_enabled" <?= $schedule['enabled'] ? 'checked' : '' ?>>
+            Enable Scheduled Backups
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="schedule_frequency">Backup Frequency</label>
+          <select id="schedule_frequency" name="schedule_frequency">
+            <option value="hourly" <?= ($schedule['frequency'] ?? 'daily') === 'hourly' ? 'selected' : '' ?>>Every Hour</option>
+            <option value="daily" <?= ($schedule['frequency'] ?? 'daily') === 'daily' ? 'selected' : '' ?>>Daily</option>
+            <option value="weekly" <?= ($schedule['frequency'] ?? 'daily') === 'weekly' ? 'selected' : '' ?>>Weekly</option>
+          </select>
+        </div>
+        <?php if (!empty($schedule['last_run'])): ?>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
+            Last scheduled backup: <?= htmlspecialchars($schedule['last_run']) ?>
+          </p>
+        <?php endif; ?>
+        <button type="submit" name="update_schedule" class="btn btn-primary">💾 Save Schedule Settings</button>
+      </form>
+    </div>
+
+    <!-- Backup Sets -->
+    <h2 style="color:var(--accent); margin-bottom:16px;">📚 Backup History</h2>
+    <?php if (empty($backupSets)): ?>
+      <div class="card">
         <div class="empty-state">
           <h3>No Backups Found</h3>
-          <p>No backup files have been created yet. Create your first backup from the Logs page.</p>
+          <p>No backup files have been created yet. Create your first backup above.</p>
         </div>
       </div>
     <?php else: ?>
-      <div class="backup-table">
-        <table>
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Size</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($backups as $backup): ?>
-              <tr>
-                <td><code><?= htmlspecialchars($backup['name']) ?></code></td>
-                <td>
-                  <span class="file-type <?= 
-                    $backup['type'] === 'User Tokens' ? 'type-tokens' : 
-                    ($backup['type'] === 'Support Tickets' ? 'type-tickets' : 'type-settings') 
-                  ?>">
-                    <?= htmlspecialchars($backup['type']) ?>
-                  </span>
-                </td>
-                <td class="description-cell">
-                  <div class="desc-display" id="desc-<?= md5($backup['name']) ?>">
-                    <?= htmlspecialchars($backup['description']) ?>
-                    <button type="button" onclick="toggleEditDesc('<?= md5($backup['name']) ?>')" class="btn btn-secondary" style="margin-left:8px; padding:2px 8px; font-size:11px;">✏️ Edit</button>
-                  </div>
-                  <form method="post" class="edit-desc-form" id="edit-<?= md5($backup['name']) ?>">
-                    <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['name']) ?>">
-                    <input type="text" name="new_description" value="<?= htmlspecialchars($backup['description']) ?>" placeholder="Enter description">
-                    <button type="submit" name="update_description" class="btn btn-primary">💾 Save</button>
-                    <button type="button" onclick="toggleEditDesc('<?= md5($backup['name']) ?>')" class="btn btn-secondary">✖ Cancel</button>
-                  </form>
-                </td>
-                <td><?= number_format($backup['size'] / 1024, 1) ?> KB</td>
-                <td><?= date('M j, Y, g:i A', $backup['modified']) ?></td>
-                <td>
-                  <div class="action-buttons">
-                    <form method="post" style="display:inline;" onsubmit="return confirm('Restore this backup? This will overwrite the current file.')">
-                      <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['name']) ?>">
-                      <button type="submit" name="restore_backup" class="btn btn-success">↻ Restore</button>
-                    </form>
-                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete this backup? This action cannot be undone.')">
-                      <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['name']) ?>">
-                      <button type="submit" name="delete_backup" class="btn btn-danger">🗑️ Delete</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+      <div class="backup-grid">
+        <?php foreach ($backupSets as $set): ?>
+          <div class="backup-set-card">
+            <div class="backup-time">
+              <?= date('g:i A', $set['created']) ?>
+            </div>
+            <div class="backup-date">
+              <?= date('l, F j, Y', $set['created']) ?>
+            </div>
+            
+            <div class="backup-description" id="desc-<?= md5($set['timestamp']) ?>">
+              <?= htmlspecialchars($set['description']) ?>
+            </div>
+            
+            <div class="backup-files">
+              📦 <?= $set['file_count'] ?> files backed up
+              <br>
+              <span style="font-size:11px;">
+                <?php
+                $fileTypes = [];
+                foreach ($set['files'] as $file) {
+                    if (strpos($file, 'tokens_') === 0) $fileTypes[] = 'Users';
+                    elseif (strpos($file, 'tickets_') === 0) $fileTypes[] = 'Tickets';
+                    elseif (strpos($file, 'settings_') === 0) $fileTypes[] = 'Settings';
+                }
+                echo implode(' • ', array_unique($fileTypes));
+                ?>
+              </span>
+            </div>
+            
+            <div class="backup-actions">
+              <button onclick="toggleEdit('<?= md5($set['timestamp']) ?>')" class="btn btn-secondary btn-small">
+                ✏️ Edit
+              </button>
+              <form method="post" style="display:inline;" onsubmit="return confirm('Restore this backup set? This will overwrite current files.')">
+                <input type="hidden" name="backup_timestamp" value="<?= htmlspecialchars($set['timestamp']) ?>">
+                <button type="submit" name="restore_backup_set" class="btn btn-success btn-small">
+                  ↻ Restore
+                </button>
+              </form>
+              <form method="post" style="display:inline;" onsubmit="return confirm('Delete this backup set? This cannot be undone.')">
+                <input type="hidden" name="backup_timestamp" value="<?= htmlspecialchars($set['timestamp']) ?>">
+                <button type="submit" name="delete_backup_set" class="btn btn-danger btn-small">
+                  🗑️ Delete
+                </button>
+              </form>
+            </div>
+            
+            <form method="post" class="edit-form" id="edit-<?= md5($set['timestamp']) ?>">
+              <input type="hidden" name="backup_timestamp" value="<?= htmlspecialchars($set['timestamp']) ?>">
+              <input type="text" name="new_description" value="<?= htmlspecialchars($set['description']) ?>" placeholder="Enter description">
+              <div style="display:flex; gap:8px;">
+                <button type="submit" name="update_description" class="btn btn-primary btn-small">💾 Save</button>
+                <button type="button" onclick="toggleEdit('<?= md5($set['timestamp']) ?>')" class="btn btn-secondary btn-small">✖ Cancel</button>
+              </div>
+            </form>
+          </div>
+        <?php endforeach; ?>
       </div>
     <?php endif; ?>
   </div>
 
 <script>
-// Theme toggle
-const saved = localStorage.getItem("theme");
-if(saved){
-  document.documentElement.setAttribute("data-theme", saved);
-}
-
 // Banner management
 function hideBanner() {
   const banner = document.getElementById('banner');
   if (banner) {
     banner.classList.add('hide');
     banner.classList.remove('show');
-    setTimeout(() => {
-      const url = new URL(window.location);
-      url.searchParams.delete('msg');
-      url.searchParams.delete('msgtype');
-      window.history.replaceState({}, '', url);
-    }, 300);
   }
 }
 
@@ -606,16 +681,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Toggle edit description form
-function toggleEditDesc(id) {
-  const display = document.getElementById('desc-' + id);
+function toggleEdit(id) {
   const form = document.getElementById('edit-' + id);
   
   if (form.classList.contains('active')) {
     form.classList.remove('active');
-    display.style.display = 'block';
   } else {
+    // Close all other edit forms
+    document.querySelectorAll('.edit-form.active').forEach(f => f.classList.remove('active'));
     form.classList.add('active');
-    display.style.display = 'none';
   }
 }
 </script>
