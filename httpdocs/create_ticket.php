@@ -276,5 +276,5 @@ try {
 }
 
 // Redirect to success page
-header("Location: view_ticket.php?id={$ticketId}&created=1");
+header("Location: ticket.php?id={$ticketId}&created=1");
 exit;

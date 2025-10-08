@@ -8,6 +8,10 @@ ErrorDocument 503 /500.php
 
 RewriteEngine On
 
+# Redirect old URLs to new simplified URLs
+RewriteRule ^tickets_admin\.php$ /tickets [L,R=301]
+RewriteRule ^view_ticket\.php$ /ticket [L,R=301,QSA]
+
 # Set default index file
 DirectoryIndex index.php
 
