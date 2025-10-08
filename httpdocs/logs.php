@@ -13,7 +13,16 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 // Get log file path from query or default to auth log
 $logType = $_GET['type'] ?? 'auth';
-$lines = (int)(          <?php endif; ?>
+$lines = (int)          <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
+          
+          <?php if (file_exists($logFile) && filesize($logFile) > 0): ?>
+            <button type="button" onclick="clearLogFile('<?= $logType ?>')" class="clear-btn">🗑️ Clear Log</button>
+          <?php endif; ?>
+        </div>
+      </form>
+    </div>
+
+    <div class="log-container">hp endif; ?>
         </div>
       </form>
     </div>ines'] ?? 200);
