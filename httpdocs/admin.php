@@ -4,6 +4,15 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/timezone_utils.php';
 
+// Handle AJAX logging for dashboard modal
+if (isset($_POST['action']) && $_POST['action'] === 'log_modal_open' && isset($_SESSION['admin_logged_in'])) {
+    EnderBitLogger::logAdmin('DASHBOARD_CUSTOMIZE_MODAL_OPENED', 'VIEW_CUSTOMIZE_MODAL', [
+        'timestamp' => date('Y-m-d H:i:s')
+    ]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 // Function to check if updates are available
 function checkForUpdates() {
     $versionFile = __DIR__ . '/version.json';
@@ -126,13 +135,27 @@ if (isset($_POST['approve_user'])) {
 // Handle dashboard customization
 $dashboardConfigFile = __DIR__ . '/dashboard_config.json';
 if (isset($_POST['save_dashboard_stats'])) {
+    $oldConfig = [];
+    if (file_exists($dashboardConfigFile)) {
+        $oldConfig = json_decode(file_get_contents($dashboardConfigFile), true) ?? [];
+    }
+    
     $config = [
         'stat1' => $_POST['stat1'] ?? 'last_backup',
         'stat2' => $_POST['stat2'] ?? 'open_tickets',
         'stat3' => $_POST['stat3'] ?? 'today_activity',
         'stat4' => $_POST['stat4'] ?? 'security_alerts'
     ];
+    
     file_put_contents($dashboardConfigFile, json_encode($config, JSON_PRETTY_PRINT));
+    
+    // Log the dashboard customization
+    EnderBitLogger::logAdmin('DASHBOARD_CUSTOMIZED', 'CUSTOMIZE_STATS', [
+        'old_config' => $oldConfig,
+        'new_config' => $config,
+        'changes' => array_diff_assoc($config, $oldConfig)
+    ]);
+    
     header("Location: admin.php?msg=" . urlencode("Dashboard stats updated!") . "&type=success");
     exit;
 }
@@ -684,6 +707,12 @@ window.addEventListener('load', ()=>{
 
 // Dashboard customization modal
 function openCustomizeModal() {
+  // Log modal opening via AJAX
+  fetch('admin.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'action=log_modal_open'
+  });
   document.getElementById('customizeModal').style.display = 'flex';
 }
 
@@ -711,7 +740,7 @@ window.addEventListener('click', function(e) {
     <p style="color:var(--muted);margin-bottom:24px;">Choose what information to display in each of the 4 dashboard statistics panels.</p>
     
     <form method="post">
-      <?php foreach (['stat1' => 'Panel 1 (Top Left)', 'stat2' => 'Panel 2 (Top Right)', 'stat3' => 'Panel 3 (Bottom Left)', 'stat4' => 'Panel 4 (Bottom Right)'] as $statKey => $statLabel): ?>
+      <?php foreach (['stat1' => 'Left', 'stat2' => 'Middle Left', 'stat3' => 'Middle Right', 'stat4' => 'Right'] as $statKey => $statLabel): ?>
         <div style="margin-bottom:20px;">
           <label style="display:block;color:var(--accent);font-weight:600;margin-bottom:8px;"><?= $statLabel ?></label>
           <select name="<?= $statKey ?>" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--input-border);background:var(--card);color:var(--text);font-size:14px;">

@@ -45,22 +45,21 @@ function getUserIP() {
     return $ip;
 }
 
-// Get timezone from IP address using ipapi.co (free, no API key required)
+// Get timezone from IP address using ip-api.com (free, no API key required)
 function getTimezoneFromIP($ip) {
     if (!$ip) {
         return 'America/New_York'; // Default fallback
     }
     
-    // Try to get from cache file first
-    $cacheFile = __DIR__ . '/cache/timezone_cache.json';
-    $cache = [];
-    
-    if (file_exists($cacheFile)) {
-        $cache = json_decode(file_get_contents($cacheFile), true) ?? [];
-        
-        // Check if we have a cached result for this IP (valid for 7 days)
-        if (isset($cache[$ip]) && (time() - $cache[$ip]['time']) < 604800) {
-            return $cache[$ip]['timezone'];
+    // Try to get from cookie first (stored as hashed IP to timezone mapping)
+    $cookieName = 'tz_' . substr(md5($ip), 0, 8); // Short hash of IP
+    if (isset($_COOKIE[$cookieName])) {
+        $cookieData = json_decode($_COOKIE[$cookieName], true);
+        if ($cookieData && isset($cookieData['tz']) && isset($cookieData['exp'])) {
+            // Check if cookie is still valid (7 days = 604800 seconds)
+            if (time() < $cookieData['exp']) {
+                return $cookieData['tz'];
+            }
         }
     }
     
@@ -82,28 +81,20 @@ function getTimezoneFromIP($ip) {
             if (isset($data['status']) && $data['status'] === 'success' && isset($data['timezone'])) {
                 $timezone = $data['timezone'];
                 
-                // Cache the result
-                $cache[$ip] = [
-                    'timezone' => $timezone,
-                    'time' => time()
+                // Store in cookie for 7 days
+                $cookieData = [
+                    'tz' => $timezone,
+                    'exp' => time() + 604800 // 7 days
                 ];
-                
-                // Ensure cache directory exists
-                $cacheDir = dirname($cacheFile);
-                if (!is_dir($cacheDir)) {
-                    mkdir($cacheDir, 0755, true);
-                }
-                
-                // Save cache (limit to 1000 entries)
-                if (count($cache) > 1000) {
-                    // Remove oldest entries
-                    uasort($cache, function($a, $b) {
-                        return $a['time'] - $b['time'];
-                    });
-                    $cache = array_slice($cache, -1000, null, true);
-                }
-                
-                file_put_contents($cacheFile, json_encode($cache, JSON_PRETTY_PRINT));
+                setcookie(
+                    $cookieName,
+                    json_encode($cookieData),
+                    time() + 604800, // 7 days
+                    '/',
+                    '',
+                    false, // Not HTTPS-only (change to true if using HTTPS)
+                    true   // HTTP-only for security
+                );
                 
                 return $timezone;
             }

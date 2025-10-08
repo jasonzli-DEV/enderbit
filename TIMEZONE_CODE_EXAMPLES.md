@@ -187,21 +187,29 @@ echo formatTimeInUserTZ($winter, 'g:i A T');
 
 ### Test 3: Cache Hit vs Miss
 ```php
-// First request (cache miss)
+// First request (cookie/session miss)
 $start = microtime(true);
 $tz1 = getUserTimezone();
 $time1 = microtime(true) - $start;
-echo "First call: {$time1}s (API call)\n";
+echo "First call: {$time1}s (API call + cookie set)\n";
 
-// Second request (cache hit)
+// Second request same session (session hit)
 $start = microtime(true);
 $tz2 = getUserTimezone();
 $time2 = microtime(true) - $start;
 echo "Second call: {$time2}s (from session)\n";
 
+// Third request new session (cookie hit)
+unset($_SESSION['user_timezone']); // simulate new session
+$start = microtime(true);
+$tz3 = getUserTimezone();
+$time3 = microtime(true) - $start;
+echo "Third call: {$time3}s (from cookie)\n";
+
 // Results:
-// First call: 0.052s (API call)
+// First call: 0.052s (API call + cookie set)
 // Second call: 0.00001s (from session)
+// Third call: 0.00002s (from cookie, no API call)
 ```
 
 ## Error Handling
@@ -225,11 +233,11 @@ $timezone = getUserTimezone();
 // Returns: 'America/New_York' (fallback)
 ```
 
-### Cache Corruption
+### Cache Expiry
 ```php
-// If cache file is corrupted/unreadable
-// System automatically recreates cache file
-// No errors thrown, seamless fallback
+// Cookies automatically expire after 7 days
+// Browser handles cleanup automatically
+// No manual cache management needed
 ```
 
 ## Performance Optimization Tips
@@ -248,20 +256,20 @@ foreach ($timestamps as $ts) {
 }
 ```
 
-### 2. Cache Pre-warming
+### 2. Cookie Persistence
 ```php
-// For high-traffic periods, pre-warm cache
-// Run this as a cron job during low traffic
-$commonIPs = ['8.8.8.8', '1.1.1.1', /*...*/];
-foreach ($commonIPs as $ip) {
-    getTimezoneFromIP($ip);
-}
+// Timezone stored in cookies (7-day expiry)
+// Persists across sessions automatically
+// No file I/O overhead
+// Browser handles cache management
 ```
 
-### 3. Session Persistence
+### 3. Session-First Strategy
 ```php
-// Timezone is stored in session
-// Lives until browser closes or session expires
+// getUserTimezone() checks in order:
+// 1. Session (fastest)
+// 2. Cookie (very fast)
+// 3. API call (only if both miss)
 // No configuration needed - automatic
 ```
 
@@ -302,19 +310,28 @@ echo "User IP: " . getUserIP() . "<br>";
 
 ### Force Timezone Detection
 ```php
-// Clear session to force re-detection
+// Clear session to force cookie check
 unset($_SESSION['user_timezone']);
 
-// Clear cache to force API call
-@unlink(__DIR__ . '/cache/timezone_cache.json');
+// Clear cookies to force API call (in browser console)
+document.cookie.split(';').forEach(c => {
+  if(c.trim().startsWith('tz_')) {
+    document.cookie = c.split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+  }
+});
 ```
 
-### View Cache Contents
+### View Cookie Contents
 ```php
-$cache = json_decode(file_get_contents(__DIR__ . '/cache/timezone_cache.json'), true);
-echo "<pre>";
-print_r($cache);
-echo "</pre>";
+// View timezone cookies
+foreach ($_COOKIE as $name => $value) {
+    if (strpos($name, 'tz_') === 0) {
+        echo "$name: ";
+        print_r(json_decode($value, true));
+        echo "<br>";
+    }
+}
+// Output: tz_a1b2c3d4: Array ( [tz] => America/Los_Angeles [exp] => 1733612400 )
 ```
 
 ## Migration Notes

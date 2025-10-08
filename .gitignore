@@ -15,9 +15,6 @@ httpdocs/dashboard_config.json
 # Uploads (user attachments)
 httpdocs/uploads/
 
-# Cache files
-httpdocs/cache/
-
 # Logs
 *.log
 httpdocs/*.log

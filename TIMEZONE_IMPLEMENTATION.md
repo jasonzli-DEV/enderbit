@@ -7,14 +7,15 @@ Implemented automatic timezone detection based on user's IP address for all admi
 
 ### Automatic Timezone Detection
 - Detects user timezone based on IP address using ip-api.com (free, no API key required)
-- Caches results for 7 days to reduce API calls
+- Caches results in cookies for 7 days to reduce API calls
 - Falls back to America/New_York if detection fails
 - Handles local IPs gracefully
 
-### Session-Based Storage
-- Once detected, timezone is stored in PHP session
-- No repeated API calls during the same session
-- Fast subsequent page loads
+### Multi-Layer Caching
+- **Primary Cache**: PHP session (fast, per-session)
+- **Secondary Cache**: HTTP-only cookies (persists across sessions, 7-day expiry)
+- **Fallback**: API call if both caches miss
+- No filesystem dependencies or file I/O overhead
 
 ### Visual Indicators
 All admin pages now show timezone information:
@@ -27,14 +28,12 @@ All admin pages now show timezone information:
 
 ### New Files
 - httpdocs/timezone_utils.php - Core timezone utility functions
-- httpdocs/cache/timezone_cache.json - IP-to-timezone cache (gitignored)
 
 ### Modified Files
 - httpdocs/backup.php - Updated time display to use formatTimeInUserTZ()
 - httpdocs/logs.php - Updated log timestamps to use formatDateTimeInUserTZ()
 - httpdocs/tickets_admin.php - Updated ticket creation times
 - httpdocs/admin.php - Replaced old timezone function
-- .gitignore - Added httpdocs/cache/ to ignore timezone cache
 
 ## Functions Available
 
@@ -53,15 +52,30 @@ ip-api.com
 
 ## Cache System
 
-- Location: httpdocs/cache/timezone_cache.json
-- Expiry: 7 days (604800 seconds)
-- Max Entries: 1000 (auto-purges oldest entries)
-- Fallback: If cache is corrupted, recreates from scratch
+### Cookie-Based Cache
+- **Cookie Name**: `tz_[8-char-hash]` (IP hashed with MD5 for privacy)
+- **Cookie Data**: JSON with `{'tz': 'timezone', 'exp': timestamp}`
+- **Expiry**: 7 days (604800 seconds)
+- **Security**: HTTP-only flag prevents JavaScript access
+- **Scope**: Domain-wide, travels with browser
+- **Benefits**:
+  - No file I/O overhead
+  - Browser handles expiry automatically
+  - No filesystem permissions needed
+  - Per-user cache persists across sessions
+
+### Cache Flow
+1. Check `$_SESSION['timezone']` (primary cache)
+2. Check cookie `tz_[hash]` (secondary cache)
+3. Call ip-api.com API if both miss
+4. Store result in both session and cookie
 
 ## Security Considerations
 
-- IP addresses are cached but not logged permanently
-- No personal data stored (only IP to timezone mapping)
+- IP addresses hashed in cookie names for privacy
+- HTTP-only cookies prevent XSS attacks
+- No personal data stored (only IP-to-timezone mapping)
 - API calls timeout after 2 seconds
 - Graceful fallback if API is down
 - Local IPs not sent to API
+- Cookies expire automatically after 7 days

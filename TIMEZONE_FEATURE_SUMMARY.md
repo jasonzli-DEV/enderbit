@@ -40,31 +40,37 @@ User visits admin page
     ↓
 System detects IP address (123.45.67.89)
     ↓
-Checks cache (7-day storage)
+Checks session cache (primary)
     ↓
-If not cached → calls ip-api.com
+If not in session → checks cookie cache (tz_[hash])
+    ↓
+If not in cookie → calls ip-api.com
     ↓
 Returns timezone (America/Los_Angeles)
     ↓
-Stores in session + cache
+Stores in session + cookie (7-day expiry)
     ↓
 All times displayed in user's timezone
 ```
 
 ## ⚡ Performance
 
-- **First visit**: ~50ms API call (cached for 7 days)
-- **Subsequent visits**: 0ms (reads from session)
-- **Free tier**: 45 requests/minute
-- **Cache size**: Max 1000 entries (auto-purges oldest)
+- **First visit**: ~50ms API call (stored in cookie for 7 days)
+- **Same session**: 0ms (reads from `$_SESSION`)
+- **New session**: 0ms (reads from cookie, no API call)
+- **Free tier**: 45 requests/minute (rarely needed due to cookies)
+- **Cache type**: HTTP-only cookies (no file I/O)
 
 ## 🛡️ Privacy & Security
 
 - ✅ No personal data stored
+- ✅ IP addresses hashed in cookie names (privacy)
+- ✅ HTTP-only cookies prevent XSS attacks
 - ✅ Only IP → timezone mapping cached
 - ✅ Local IPs (127.0.0.1, 192.168.x) not sent to API
 - ✅ 2-second timeout on API calls
 - ✅ Graceful fallback to America/New_York
+- ✅ Cookies expire automatically after 7 days
 
 ## 📝 Examples
 
@@ -120,9 +126,14 @@ To test with different timezones:
 unset($_SESSION['user_timezone']);
 ```
 
-2. **Clear cache**:
+2. **Clear cookie cache**:
 ```bash
-rm httpdocs/cache/timezone_cache.json
+# In browser DevTools Console:
+document.cookie.split(';').forEach(c => {
+  if(c.trim().startsWith('tz_')) {
+    document.cookie = c.split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+  }
+});
 ```
 
 3. **Manual override** (for testing):
@@ -135,14 +146,11 @@ $_SESSION['user_timezone'] = 'Asia/Tokyo';
 ```
 enderbit.com/
 ├── httpdocs/
-│   ├── timezone_utils.php         ← New: Core utility functions
-│   ├── cache/
-│   │   └── timezone_cache.json    ← New: IP-to-timezone cache
+│   ├── timezone_utils.php         ← New: Core utility functions (cookie-based cache)
 │   ├── backup.php                 ← Modified: Uses formatTimeInUserTZ()
 │   ├── logs.php                   ← Modified: Uses formatDateTimeInUserTZ()
 │   ├── tickets_admin.php          ← Modified: Uses formatDateTimeInUserTZ()
 │   └── admin.php                  ← Modified: Removed old timezone function
-└── .gitignore                     ← Modified: Added cache/ directory
 ```
 
 ## 🎯 Benefits
@@ -150,9 +158,11 @@ enderbit.com/
 1. **Better UX**: Users see times in their familiar timezone
 2. **No confusion**: Clear timezone indicators (EST, PST, GMT, etc.)
 3. **Automatic**: No user configuration needed
-4. **Fast**: Session + cache = instant display
+4. **Fast**: Session + cookie = instant display, no file I/O
 5. **Reliable**: Graceful fallback if API fails
-6. **Scalable**: Cache reduces API load significantly
+6. **Scalable**: Cookie cache reduces API load significantly
+7. **Portable**: Timezone travels with user across sessions
+8. **Clean**: No filesystem dependencies or cache directories
 
 ---
 
