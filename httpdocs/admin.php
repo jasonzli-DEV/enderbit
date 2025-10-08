@@ -296,6 +296,9 @@ if (isset($_POST['approve_user'])) {
         <a href="logs.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">
           📋 View System Logs
         </a>
+        <a href="backup.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">
+          💾 Backup Management
+        </a>
         <a href="update.php" class="btn btn-secondary" style="display:block;text-decoration:none;margin-bottom:10px;">
           🔄 Update Panel
           <?php if ($hasUpdate): ?><span class="update-badge">NEW</span><?php endif; ?>

@@ -1,0 +1,7 @@
+# Deny access to backup files for security
+Order Deny,Allow
+Deny from all
+
+# Allow access only from localhost (for admin panel)
+Allow from 127.0.0.1
+Allow from ::1
