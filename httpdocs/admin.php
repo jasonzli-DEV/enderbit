@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
 
 // Helper function to format datetime in user's timezone
 function format_user_time($datetime, $timezone) {
@@ -74,9 +75,12 @@ if (!isset($_SESSION['admin_logged_in'])) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_password'])) {
         if ($_POST['admin_password'] === $config['admin_password']) {
             $_SESSION['admin_logged_in'] = true;
+            EnderBitLogger::logAuth('ADMIN_LOGIN_SUCCESS', ['admin' => true]);
             header("Location: admin.php");
             exit;
         } else {
+            EnderBitLogger::logAuth('ADMIN_LOGIN_FAILED', ['admin' => true, 'reason' => 'Invalid password']);
+            EnderBitLogger::logSecurity('ADMIN_LOGIN_ATTEMPT_FAILED', 'MEDIUM', ['reason' => 'Invalid password']);
             $msg = "Invalid password.";
             $type = "error";
         }
@@ -86,6 +90,8 @@ if (!isset($_SESSION['admin_logged_in'])) {
 // Approve pending user
 if (isset($_POST['approve_user'])) {
     $emailToApprove = $_POST['approve_user'];
+    EnderBitLogger::logAdmin('USER_APPROVAL_INITIATED', 'APPROVE_USER', ['email' => $emailToApprove]);
+    
     $tokensFile = __DIR__ . '/tokens.json';
     if (file_exists($tokensFile)) {
         $tokens = json_decode(file_get_contents($tokensFile), true);
@@ -96,7 +102,7 @@ if (isset($_POST['approve_user'])) {
                 $tokens[$i]['approved'] = true;
 
                 $password = isset($tokens[$i]['password_plain']) ? base64_decode($tokens[$i]['password_plain']) : '';
-                create_user_on_ptero([
+                $result = create_user_on_ptero([
                     'first' => $tokens[$i]['first'],
                     'last'  => $tokens[$i]['last'],
                     'username' => isset($tokens[$i]['username']) ? $tokens[$i]['username'] : '',
@@ -107,9 +113,18 @@ if (isset($_POST['approve_user'])) {
                 array_splice($tokens, $i, 1);
                 if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
                     error_log("Failed to update tokens file after approval");
+                    EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'user_approval', 'email' => $emailToApprove]);
                     header("Location: admin.php?msg=" . urlencode("Approval failed - please try again") . "&type=error");
                     exit;
                 }
+                
+                if ($result) {
+                    EnderBitLogger::logAdmin('USER_APPROVAL_SUCCESS', 'APPROVE_USER', ['email' => $emailToApprove]);
+                    EnderBitLogger::logRegistration('USER_APPROVED_AND_CREATED', $emailToApprove);
+                } else {
+                    EnderBitLogger::logAdmin('USER_APPROVAL_PTERODACTYL_FAILED', 'APPROVE_USER', ['email' => $emailToApprove]);
+                }
+                
                 header("Location: admin.php?msg=" . urlencode("User approved and created!") . "&type=success");
                 exit;
             }
@@ -378,15 +393,13 @@ if (isset($_POST['approve_user'])) {
                                 'billing' => '💳',
                                 'account' => '👤',
                                 'feature' => '✨',
-                                'get_server' => '🖥️',
                                 'other' => '❓'
                               ];
                               $categoryNames = [
                                 'technical' => 'Technical',
-                                'billing' => 'Billing',
+                                'billing' => 'Get a Server',
                                 'account' => 'Account',
                                 'feature' => 'Feature Request',
-                                'get_server' => 'Get a Server',
                                 'other' => 'Other'
                               ];
                               $icon = $categoryIcons[$ticket['category']] ?? '📋';

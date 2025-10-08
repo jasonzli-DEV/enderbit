@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: support.php");
@@ -43,6 +44,11 @@ if (!is_array($tickets)) {
 // Generate unique ticket ID
 $ticketId = 'TICKET-' . strtoupper(bin2hex(random_bytes(4)));
 
+EnderBitLogger::logTicket('TICKET_CREATION_STARTED', $ticketId, $email, [
+    'subject' => $subject,
+    'category' => $category
+]);
+
 // Handle file attachment
 $attachmentPath = null;
 if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
@@ -59,12 +65,22 @@ if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ER
     $fileName = $_FILES['attachment']['name'];
     $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
     
+    EnderBitLogger::logUpload('UPLOAD_ATTEMPT', $fileName, [
+        'ticket_id' => $ticketId,
+        'file_type' => $fileType,
+        'file_size' => $fileSize,
+        'file_ext' => $fileExt
+    ]);
+    
     if (!in_array($fileType, $allowedTypes) && !in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt', 'log', 'zip'])) {
+        EnderBitLogger::logUpload('UPLOAD_REJECTED_TYPE', $fileName, ['ticket_id' => $ticketId, 'file_type' => $fileType]);
+        EnderBitLogger::logSecurity('INVALID_FILE_TYPE_UPLOAD', 'MEDIUM', ['ticket_id' => $ticketId, 'file_type' => $fileType, 'email' => $email]);
         header("Location: support.php?msg=" . urlencode("Invalid file type. Allowed: JPG, PNG, GIF, PDF, TXT, LOG, ZIP") . "&type=error");
         exit;
     }
     
     if ($fileSize > $maxSize) {
+        EnderBitLogger::logUpload('UPLOAD_REJECTED_SIZE', $fileName, ['ticket_id' => $ticketId, 'file_size' => $fileSize, 'max_size' => $maxSize]);
         header("Location: support.php?msg=" . urlencode("File too large. Maximum size is 5MB") . "&type=error");
         exit;
     }
@@ -74,6 +90,9 @@ if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ER
     
     if (move_uploaded_file($_FILES['attachment']['tmp_name'], $uploadPath)) {
         $attachmentPath = 'uploads/' . $safeFileName;
+        EnderBitLogger::logUpload('UPLOAD_SUCCESS', $safeFileName, ['ticket_id' => $ticketId, 'file_size' => $fileSize]);
+    } else {
+        EnderBitLogger::logUpload('UPLOAD_FAILED', $fileName, ['ticket_id' => $ticketId, 'error' => 'move_uploaded_file failed']);
     }
 }
 

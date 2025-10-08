@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
 
 // Inputs
 $first = trim($_POST['first'] ?? '');
@@ -21,17 +22,27 @@ $requireAdmin = !empty($settings['require_admin_approve']) && $settings['require
 
 // Debug logging
 error_log("[REGISTER] Settings - requireEmail: " . ($requireEmail ? 'true' : 'false') . ", requireAdmin: " . ($requireAdmin ? 'true' : 'false'));
+EnderBitLogger::logRegistration('REGISTRATION_ATTEMPT', $email, [
+    'username' => $username,
+    'require_email' => $requireEmail,
+    'require_admin' => $requireAdmin
+]);
 
 // Validate input
 if (!$first || !$last || !$username || !$email || !$password) {
+    EnderBitLogger::logRegistration('REGISTRATION_FAILED', $email, ['reason' => 'Missing fields']);
     header("Location: signup.php?msg=" . urlencode("Missing fields") . "&type=error");
     exit;
 }
 if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $username)) {
+    EnderBitLogger::logRegistration('REGISTRATION_FAILED', $email, ['reason' => 'Invalid username format', 'username' => $username]);
+    EnderBitLogger::logSecurity('INVALID_USERNAME_FORMAT', 'LOW', ['email' => $email, 'username' => $username]);
     header("Location: signup.php?msg=" . urlencode("Username can only contain letters, numbers, dots, hyphens and underscores") . "&type=error");
     exit;
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    EnderBitLogger::logRegistration('REGISTRATION_FAILED', $email, ['reason' => 'Invalid email format']);
+    EnderBitLogger::logSecurity('INVALID_EMAIL_FORMAT', 'LOW', ['email' => $email]);
     header("Location: signup.php?msg=" . urlencode("Invalid email") . "&type=error");
     exit;
 }
@@ -41,6 +52,8 @@ if (!empty($config['recaptcha_secret'])) {
     $resp = @file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=" . urlencode($config['recaptcha_secret']) . "&response=" . urlencode($recaptcha));
     $resp = $resp ? json_decode($resp, true) : null;
     if (!$resp || empty($resp['success'])) {
+        EnderBitLogger::logRegistration('REGISTRATION_FAILED', $email, ['reason' => 'reCAPTCHA failed']);
+        EnderBitLogger::logSecurity('RECAPTCHA_FAILED', 'MEDIUM', ['email' => $email]);
         header("Location: signup.php?msg=" . urlencode("Captcha failed") . "&type=error");
         exit;
     }

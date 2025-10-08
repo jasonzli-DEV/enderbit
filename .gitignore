@@ -2,6 +2,9 @@
 config.php
 httpdocs/config.php
 
+# AI Instructions (project-specific)
+copilot-instructions.md
+
 # JSON Data Files (contain sensitive user data)
 httpdocs/tokens.json
 httpdocs/tickets.json

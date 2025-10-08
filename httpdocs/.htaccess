@@ -1,5 +1,11 @@
 RewriteEngine On
 
+# Set default index file
+DirectoryIndex index.php
+
+# Redirect /index to / (root)
+RewriteRule ^index/?$ / [L,R=301]
+
 # Handle /image/IMAGE_ID URLs
 RewriteRule ^image/([^/]+)$ image.php?id=$1 [L,QSA]
 

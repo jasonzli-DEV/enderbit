@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
 
 // Check admin authentication
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -8,18 +9,21 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// Get log file path from query or default to PHP error log
-$logType = $_GET['type'] ?? 'php';
-$logFiles = [
-    'php' => __DIR__ . '/php_errors.log',
-    'apache' => __DIR__ . '/apache_errors.log',
-    'nginx' => __DIR__ . '/nginx_errors.log',
-    'custom' => __DIR__ . '/custom.log'
-];
-
-$logFile = $logFiles[$logType] ?? $logFiles['php'];
+// Get log file path from query or default to auth log
+$logType = $_GET['type'] ?? 'auth';
 $lines = (int)($_GET['lines'] ?? 200);
 $search = $_GET['search'] ?? '';
+$format = $_GET['format'] ?? 'structured'; // structured or raw
+
+// Get all available log files
+$availableLogs = EnderBitLogger::getLogFiles();
+
+// Determine log file path
+$logFile = __DIR__ . '/' . $logType . '.log';
+if (!isset($availableLogs[$logType])) {
+    $logType = 'auth';
+    $logFile = __DIR__ . '/auth.log';
+}
 
 // Create log file if it doesn't exist
 if (!file_exists($logFile)) {
@@ -27,10 +31,10 @@ if (!file_exists($logFile)) {
     @chmod($logFile, 0666);
 }
 
-// Function to read last N lines of a file
+// Function to read last N lines of a file (for raw logs)
 function tail($filename, $lines = 200) {
     if (!file_exists($filename)) {
-        return "Log file does not exist. It will be created when errors are logged.";
+        return "Log file does not exist. It will be created when events are logged.";
     }
     
     if (!is_readable($filename)) {
@@ -38,7 +42,7 @@ function tail($filename, $lines = 200) {
     }
     
     if (filesize($filename) === 0) {
-        return "Log file is empty. No errors have been logged yet.";
+        return "Log file is empty. No events have been logged yet.";
     }
     
     $file = new SplFileObject($filename, 'r');
@@ -59,15 +63,22 @@ function tail($filename, $lines = 200) {
     return implode('', $output);
 }
 
-$logContent = tail($logFile, $lines);
-
-// Filter by search term
-if (!empty($search)) {
-    $logLines = explode("\n", $logContent);
-    $filteredLines = array_filter($logLines, function($line) use ($search) {
-        return stripos($line, $search) !== false;
-    });
-    $logContent = implode("\n", $filteredLines);
+// Get log content based on format
+if ($format === 'structured') {
+    $logEntries = EnderBitLogger::parseLogFile($logFile, $lines, $search);
+    $logContent = null;
+} else {
+    $logContent = tail($logFile, $lines);
+    $logEntries = null;
+    
+    // Filter by search term for raw logs
+    if (!empty($search)) {
+        $logLines = explode("\n", $logContent);
+        $filteredLines = array_filter($logLines, function($line) use ($search) {
+            return stripos($line, $search) !== false;
+        });
+        $logContent = implode("\n", $filteredLines);
+    }
 }
 ?>
 <!doctype html>
@@ -197,6 +208,98 @@ if (!empty($search)) {
     line-height:1.5;
   }
 
+  .log-entry {
+    border-bottom:1px solid var(--input-border);
+    padding:12px 0;
+    margin-bottom:8px;
+  }
+
+  .log-entry:last-child {
+    border-bottom:none;
+    margin-bottom:0;
+  }
+
+  .log-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+    font-size:12px;
+  }
+
+  .log-timestamp {
+    color:var(--muted);
+    font-family:monospace;
+  }
+
+  .log-type {
+    padding:2px 8px;
+    border-radius:4px;
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+  }
+
+  .log-type.AUTH { background:var(--primary); color:#fff; }
+  .log-type.REGISTRATION { background:var(--green); color:#fff; }
+  .log-type.TICKET { background:var(--yellow); color:#000; }
+  .log-type.EMAIL { background:var(--accent); color:#fff; }
+  .log-type.PTERODACTYL { background:#ff6b35; color:#fff; }
+  .log-type.ADMIN { background:var(--red); color:#fff; }
+  .log-type.SECURITY { background:#dc143c; color:#fff; }
+  .log-type.SYSTEM { background:var(--muted); color:#fff; }
+  .log-type.UPLOAD { background:#8a2be2; color:#fff; }
+
+  .log-event {
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:4px;
+  }
+
+  .log-details {
+    font-size:12px;
+    color:var(--muted);
+    margin-left:12px;
+  }
+
+  .log-details code {
+    background:var(--input-bg);
+    padding:2px 4px;
+    border-radius:3px;
+    font-family:monospace;
+  }
+
+  .stats-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:16px;
+    margin-bottom:24px;
+  }
+
+  .stat-card {
+    background:var(--card);
+    border:1px solid var(--input-border);
+    border-radius:12px;
+    padding:16px;
+    text-align:center;
+  }
+
+  .stat-value {
+    font-size:24px;
+    font-weight:700;
+    color:var(--accent);
+  }
+
+  .stat-label {
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+
+  .format-toggle {
+    margin-left:12px;
+  }
+
   .log-info {
     display:flex;
     justify-content:space-between;
@@ -230,15 +333,38 @@ if (!empty($search)) {
       <a href="/admin.php" class="btn btn-secondary">← Back to Admin</a>
     </div>
 
+    <!-- Log Statistics -->
+    <div class="stats-grid">
+      <?php foreach ($availableLogs as $type => $info): ?>
+        <div class="stat-card">
+          <div class="stat-label"><?= htmlspecialchars($info['name']) ?></div>
+          <div class="stat-value" style="color:<?= $info['exists'] ? 'var(--accent)' : 'var(--muted)' ?>">
+            <?= $info['exists'] ? number_format($info['lines']) : '0' ?>
+          </div>
+          <div style="font-size:11px;color:var(--muted);">
+            <?= $info['exists'] ? number_format($info['size'] / 1024, 1) . ' KB' : 'No data' ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+
     <div class="controls">
       <form method="get" action="logs.php">
         <div class="control-row">
           <label for="type">Log Type:</label>
           <select name="type" id="type">
-            <option value="php" <?= $logType === 'php' ? 'selected' : '' ?>>PHP Error Log</option>
-            <option value="apache" <?= $logType === 'apache' ? 'selected' : '' ?>>Apache Error Log</option>
-            <option value="nginx" <?= $logType === 'nginx' ? 'selected' : '' ?>>Nginx Error Log</option>
-            <option value="custom" <?= $logType === 'custom' ? 'selected' : '' ?>>Custom Log</option>
+            <?php foreach ($availableLogs as $type_key => $info): ?>
+              <option value="<?= $type_key ?>" <?= $logType === $type_key ? 'selected' : '' ?>>
+                <?= htmlspecialchars($info['name']) ?> 
+                <?= $info['exists'] ? '(' . number_format($info['lines']) . ')' : '(empty)' ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+
+          <label for="format">Format:</label>
+          <select name="format" id="format" class="format-toggle">
+            <option value="structured" <?= $format === 'structured' ? 'selected' : '' ?>>Structured</option>
+            <option value="raw" <?= $format === 'raw' ? 'selected' : '' ?>>Raw</option>
           </select>
 
           <label for="lines">Lines:</label>
@@ -248,7 +374,7 @@ if (!empty($search)) {
           <input type="text" name="search" id="search" value="<?= htmlspecialchars($search) ?>" placeholder="Filter logs..." style="flex:1;min-width:200px;">
 
           <button type="submit" class="btn btn-primary">🔍 Load Logs</button>
-          <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
+          <button type="button" onclick="window.location.href='logs.php?type=<?= $logType ?>&format=<?= $format ?>&lines=<?= $lines ?>'" class="btn btn-secondary">🔄 Refresh</button>
         </div>
       </form>
     </div>
@@ -256,9 +382,55 @@ if (!empty($search)) {
     <div class="log-container">
       <div class="log-info">
         <span><strong>Log File:</strong> <?= htmlspecialchars($logFile) ?></span>
-        <span><strong>Lines:</strong> <?= $lines ?></span>
+        <span><strong>Lines:</strong> <?= $lines ?> | <strong>Format:</strong> <?= ucfirst($format) ?></span>
       </div>
-      <div class="log-content"><?= htmlspecialchars($logContent) ?: '<span style="color:var(--muted);">No logs found or log file is empty.</span>' ?></div>
+      
+      <?php if ($format === 'structured' && $logEntries !== null): ?>
+        <?php if (empty($logEntries)): ?>
+          <div style="color:var(--muted);text-align:center;padding:40px;">
+            No log entries found or log file is empty.
+          </div>
+        <?php else: ?>
+          <div style="max-height:calc(100vh - 400px);overflow-y:auto;">
+            <?php foreach ($logEntries as $entry): ?>
+              <div class="log-entry">
+                <div class="log-header">
+                  <span class="log-timestamp"><?= htmlspecialchars($entry['timestamp']) ?></span>
+                  <span class="log-type <?= htmlspecialchars($entry['type']) ?>"><?= htmlspecialchars($entry['type']) ?></span>
+                </div>
+                <div class="log-event"><?= htmlspecialchars($entry['event']) ?></div>
+                <?php if (!empty($entry['details'])): ?>
+                  <div class="log-details">
+                    <?php foreach ($entry['details'] as $key => $value): ?>
+                      <?php if (!empty($value)): ?>
+                        <div><strong><?= htmlspecialchars($key) ?>:</strong> <code><?= htmlspecialchars(is_array($value) ? json_encode($value) : $value) ?></code></div>
+                      <?php endif; ?>
+                    <?php endforeach; ?>
+                    
+                    <?php if (isset($entry['ip'])): ?>
+                      <div><strong>IP:</strong> <code><?= htmlspecialchars($entry['ip']) ?></code></div>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($entry['email'])): ?>
+                      <div><strong>Email:</strong> <code><?= htmlspecialchars($entry['email']) ?></code></div>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($entry['ticket_id'])): ?>
+                      <div><strong>Ticket:</strong> <code><?= htmlspecialchars($entry['ticket_id']) ?></code></div>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($entry['user_agent'])): ?>
+                      <div><strong>User Agent:</strong> <code><?= htmlspecialchars(substr($entry['user_agent'], 0, 100)) ?><?= strlen($entry['user_agent']) > 100 ? '...' : '' ?></code></div>
+                    <?php endif; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      <?php else: ?>
+        <div class="log-content"><?= htmlspecialchars($logContent) ?: '<span style="color:var(--muted);">No logs found or log file is empty.</span>' ?></div>
+      <?php endif; ?>
     </div>
   </div>
 
