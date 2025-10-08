@@ -566,7 +566,7 @@ $availableStats = [
 
       <div class="management-grid">
         <a href="tickets.php" class="management-card">
-          <div class="card-icon">🎫</div>
+          <div class="management-icon">🎫</div>
           <h3>Ticket Management</h3>
           <p>View and manage support tickets</p>
           <?php if ($openTickets > 0): ?>
