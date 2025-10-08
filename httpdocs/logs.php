@@ -13,7 +13,10 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 // Get log file path from query or default to auth log
 $logType = $_GET['type'] ?? 'auth';
-$lines = (int)($_GET['lines'] ?? 200);
+$lines = (int)(          <?php endif; ?>
+        </div>
+      </form>
+    </div>ines'] ?? 200);
 $search = $_GET['search'] ?? '';
 $format = $_GET['format'] ?? ($_COOKIE['logs_format'] ?? 'structured'); // Use cookie as default
 
