@@ -1,5 +1,17 @@
 <?php
+// Configure session to close on browser close (unless remember me is used)
+ini_set('session.cookie_lifetime', 0); // Session cookie (closes with browser)
+ini_set('session.gc_maxlifetime', 86400); // 24 hours max session life on server
+
 session_start();
+
+// Handle remember me cookie for persistent login
+if (isset($_COOKIE['admin_remember']) && $_COOKIE['admin_remember'] === 'true') {
+    if (!isset($_SESSION['admin_logged_in'])) {
+        $_SESSION['admin_logged_in'] = true;
+    }
+}
+
 require_once __DIR__ . '/config.php';
 
 // Check if admin is logged in

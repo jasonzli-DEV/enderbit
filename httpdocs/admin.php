@@ -1,5 +1,10 @@
 <?php
 ob_start(); // Start output buffering to allow cookies to be set
+
+// Configure session to close on browser close (unless remember me is used)
+ini_set('session.cookie_lifetime', 0); // Session cookie (closes with browser)
+ini_set('session.gc_maxlifetime', 86400); // 24 hours max session life on server
+
 session_start();
 
 // Extend session lifetime for admin (30 days if remember me is used)
@@ -7,11 +12,25 @@ if (isset($_COOKIE['admin_remember']) && $_COOKIE['admin_remember'] === 'true') 
     // Verify admin is logged in and extend session
     if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
         // Refresh the remember cookie
-        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
+        
+        // Extend session cookie lifetime to 30 days when remember me is active
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), session_id(), time() + (30 * 24 * 60 * 60), 
+                $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
+        }
     } elseif (!isset($_SESSION['admin_logged_in'])) {
         // Auto-login from remember cookie
         $_SESSION['admin_logged_in'] = true;
-        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
+    }
+} else {
+    // No remember me cookie - ensure session cookie is set to expire on browser close
+    if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['admin_logged_in'])) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), session_id(), 0, // 0 = session cookie
+            $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
     }
 }
 
@@ -80,8 +99,9 @@ if (isset($_POST['logout'])) {
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
     
     // Clear remember cookie
-    setcookie('admin_remember', '', time() - 3600, '/', '', true, true);
+    setcookie('admin_remember', '', time() - 3600, '/', '', isset($_SERVER['HTTPS']), true);
     
+    EnderBitLogger::logAuth('ADMIN_LOGOUT', ['admin' => true]);
     session_destroy();
     header("Location: admin.php?msg=Logged+out&type=success");
     exit;
@@ -95,7 +115,21 @@ if (!isset($_SESSION['admin_logged_in'])) {
             
             // Set remember me cookie if checked
             if (isset($_POST['remember_me']) && $_POST['remember_me'] === '1') {
-                setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+                setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
+                
+                // Extend session cookie lifetime to 30 days
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    $params = session_get_cookie_params();
+                    setcookie(session_name(), session_id(), time() + (30 * 24 * 60 * 60), 
+                        $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
+                }
+            } else {
+                // Session cookie only - expires when browser closes
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    $params = session_get_cookie_params();
+                    setcookie(session_name(), session_id(), 0, 
+                        $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
+                }
             }
             
             EnderBitLogger::logAuth('ADMIN_LOGIN_SUCCESS', ['admin' => true, 'remember_me' => isset($_POST['remember_me'])]);
