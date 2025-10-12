@@ -330,22 +330,8 @@ if (isset($_POST['update_schedule'])) {
     
     saveSchedule($schedule);
     EnderBitLogger::logAdmin('BACKUP_SCHEDULE_UPDATED', 'UPDATE_SCHEDULE', $schedule);
-    header("Location: backup.php?msg=" . urlencode("Backup schedule updated successfully") . "&msgtype=success");
+    header("Location: backup.php?msg=" . urlencode("Backup schedule updated successfully. Make sure to set up the cron job: 0 * * * * /usr/bin/php " . __DIR__ . "/cron_backup.php") . "&msgtype=success");
     exit;
-}
-
-// Check for scheduled backup
-if (checkScheduledBackup()) {
-    $result = performBackup('Scheduled backup');
-    if ($result['success']) {
-        $schedule = loadSchedule();
-        $schedule['last_run'] = date('Y-m-d H:i:s');
-        saveSchedule($schedule);
-        EnderBitLogger::logAdmin('SCHEDULED_BACKUP_COMPLETED', 'BACKUP_JSON_FILES', [
-            'files' => $result['files'],
-            'timestamp' => $result['timestamp']
-        ]);
-    }
 }
 
 // Get backup sets

@@ -1,10 +1,12 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logger.php';
 
 // Get token from URL
 $token = $_GET['token'] ?? '';
 if (!$token) {
+    EnderBitLogger::logSecurity('INVALID_VERIFICATION_LINK', 'LOW', ['reason' => 'No token provided']);
     header("Location: signup.php?msg=" . urlencode("Invalid verification link") . "&type=error");
     exit;
 }
@@ -37,6 +39,7 @@ for ($i = 0; $i < count($tokens); $i++) {
 }
 
 if ($foundIndex === -1) {
+    EnderBitLogger::logSecurity('INVALID_VERIFICATION_TOKEN', 'MEDIUM', ['token' => substr($token, 0, 8) . '...']);
     header("Location: signup.php?msg=" . urlencode("Invalid or expired verification token") . "&type=error");
     exit;
 }
@@ -45,6 +48,11 @@ $user = $tokens[$foundIndex];
 
 // Mark as verified
 $tokens[$foundIndex]['verified'] = true;
+
+EnderBitLogger::logRegistration('EMAIL_VERIFIED', $user['email'], [
+    'username' => $user['username'] ?? 'N/A',
+    'require_admin_approval' => $requireAdmin
+]);
 
 // Case 1: No admin approval required → Create user immediately
 if (!$requireAdmin) {
@@ -63,13 +71,15 @@ if (!$requireAdmin) {
     // Remove from pending list
     array_splice($tokens, $foundIndex, 1);
     if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
-        error_log("Failed to update tokens file after verification");
+        EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'email_verification', 'email' => $entry['email']]);
     }
 
     if ($result) {
+        EnderBitLogger::logRegistration('USER_CREATED_AFTER_VERIFICATION', $user['email'], ['username' => $user['username'] ?? 'N/A']);
         header("Location: signup.php?msg=" . urlencode("Email verified — account created successfully!") . "&type=success");
         exit;
     } else {
+        EnderBitLogger::logSystem('USER_CREATION_FAILED_AFTER_VERIFICATION', ['email' => $user['email']]);
         header("Location: signup.php?msg=" . urlencode("Email verified, but user creation failed.") . "&type=error");
         exit;
     }
@@ -78,11 +88,12 @@ if (!$requireAdmin) {
 // Case 2: Admin approval required → Leave user pending
 $tokens[$foundIndex]['approved'] = false;
 if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
-    error_log("Failed to update tokens file after verification");
+    EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'email_verification_admin_approval', 'email' => $user['email']]);
     header("Location: signup.php?msg=" . urlencode("Verification failed - please try again") . "&type=error");
     exit;
 }
 
+EnderBitLogger::logRegistration('EMAIL_VERIFIED_AWAITING_APPROVAL', $user['email'], ['username' => $user['username'] ?? 'N/A']);
 header("Location: signup.php?msg=" . urlencode("Email verified — awaiting admin approval") . "&type=success");
 exit;
 ?>

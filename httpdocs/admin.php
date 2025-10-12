@@ -1,6 +1,20 @@
 <?php
 ob_start(); // Start output buffering to allow cookies to be set
 session_start();
+
+// Extend session lifetime for admin (30 days if remember me is used)
+if (isset($_COOKIE['admin_remember']) && $_COOKIE['admin_remember'] === 'true') {
+    // Verify admin is logged in and extend session
+    if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+        // Refresh the remember cookie
+        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+    } elseif (!isset($_SESSION['admin_logged_in'])) {
+        // Auto-login from remember cookie
+        $_SESSION['admin_logged_in'] = true;
+        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+    }
+}
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/timezone_utils.php';
@@ -64,6 +78,10 @@ if (isset($_POST['logout'])) {
     $settings['require_email_verify'] = !empty($_POST['require_email_verify']);
     $settings['require_admin_approve'] = !empty($_POST['require_admin_approve']);
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
+    
+    // Clear remember cookie
+    setcookie('admin_remember', '', time() - 3600, '/', '', true, true);
+    
     session_destroy();
     header("Location: admin.php?msg=Logged+out&type=success");
     exit;
@@ -74,7 +92,13 @@ if (!isset($_SESSION['admin_logged_in'])) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_password'])) {
         if ($_POST['admin_password'] === $config['admin_password']) {
             $_SESSION['admin_logged_in'] = true;
-            EnderBitLogger::logAuth('ADMIN_LOGIN_SUCCESS', ['admin' => true]);
+            
+            // Set remember me cookie if checked
+            if (isset($_POST['remember_me']) && $_POST['remember_me'] === '1') {
+                setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', true, true);
+            }
+            
+            EnderBitLogger::logAuth('ADMIN_LOGIN_SUCCESS', ['admin' => true, 'remember_me' => isset($_POST['remember_me'])]);
             header("Location: admin.php");
             exit;
         } else {
@@ -111,7 +135,6 @@ if (isset($_POST['approve_user'])) {
 
                 array_splice($tokens, $i, 1);
                 if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
-                    error_log("Failed to update tokens file after approval");
                     EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'user_approval', 'email' => $emailToApprove]);
                     header("Location: admin.php?msg=" . urlencode("Approval failed - please try again") . "&type=error");
                     exit;
@@ -251,8 +274,8 @@ $availableStats = [
   .card{background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,.3);}
   .container{max-width:1400px;margin:0 auto;}
   .card{background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,.3);}
-  .login-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-  .login-card{max-width:420px;width:100%;margin:0 auto;}
+  .login-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{max-width:550px;width:100%;margin:0 auto;padding:48px 40px;}
   h1{margin:0 0 24px;color:var(--accent);font-size:32px;}
   h2{margin:0 0 16px;color:var(--accent);font-size:24px;}
   .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}
@@ -294,12 +317,16 @@ $availableStats = [
   button.btn-small{padding:8px 16px;font-size:13px;}
   .view-ticket-btn{display:inline-block;padding:10px 20px;background:var(--accent);color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;transition:all .2s;}
   .view-ticket-btn:hover{opacity:.9;transform:translateY(-1px);}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:32px;}
-  .stat-card{background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:24px;text-align:center;transition:all .2s;}
-  .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(88,166,255,.15);border-color:var(--accent);}
+  
+  /* Unified Stats Container */
+  .stats-container{background:var(--card);border:1px solid var(--input-border);border-radius:12px;padding:32px;margin-bottom:32px;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;}
+  .stat-item{text-align:center;padding:20px 16px;border-right:1px solid var(--input-border);}
+  .stat-item:last-child{border-right:none;}
   .stat-value{font-size:36px;font-weight:700;color:var(--accent);margin:12px 0;}
   .stat-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
-  .stat-icon{font-size:28px;margin-bottom:8px;}
+  .stat-icon{font-size:32px;margin-bottom:8px;opacity:0.9;}
+  
   .update-badge{background:var(--red);color:#fff;font-size:10px;padding:4px 8px;border-radius:12px;margin-left:8px;font-weight:700;animation:pulse 2s infinite;}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .section-header{display:flex;justify-content:space-between;align-items:center;margin:32px 0 16px;}
@@ -348,7 +375,9 @@ $availableStats = [
 
   @media (max-width: 768px) {
     .page-header{flex-direction:column;align-items:flex-start;gap:16px;}
-    .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
+    .stats-grid{grid-template-columns:1fr;gap:20px;}
+    .stat-item{border-right:none;border-bottom:1px solid var(--input-border);padding-bottom:20px;}
+    .stat-item:last-child{border-bottom:none;padding-bottom:20px;}
     .filter-row{flex-direction:column;}
     .filter-select{width:100%;}
   }
@@ -366,11 +395,17 @@ $availableStats = [
   <div class="<?= !isset($_SESSION['admin_logged_in']) ? 'login-wrapper' : 'container' ?>">
     <?php if (!isset($_SESSION['admin_logged_in'])): ?>
       <div class="card login-card">
-        <h1 style="text-align:center;">Admin Login</h1>
-        <?php if (!empty($msg)): ?><p style="color:var(--red);text-align:center;"><?= htmlspecialchars($msg) ?></p><?php endif; ?>
-        <form method="post">
-          <input type="password" name="admin_password" placeholder="Enter Password" required>
-          <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">Login</button>
+        <h1 style="text-align:center;">🔐 Admin Login</h1>
+        <?php if (!empty($msg)): ?><p style="color:var(--red);text-align:center;margin-top:12px;"><?= htmlspecialchars($msg) ?></p><?php endif; ?>
+        <form method="post" style="margin-top:24px;">
+          <input type="password" name="admin_password" placeholder="Enter Admin Password" required>
+          <label style="margin:16px 0;font-size:14px;">
+            <input type="checkbox" name="remember_me" value="1" style="width:auto;margin-right:8px;">
+            Remember me for 30 days
+          </label>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;">
+            🔓 Login
+          </button>
         </form>
         <a href="index.php" class="btn btn-secondary btn-block" style="margin-top:12px;">
           ← Return to Home
@@ -539,30 +574,32 @@ $availableStats = [
       </div>
       
       <!-- Statistics Overview -->
-      <div class="stats-grid">
-        <?php foreach (['stat1', 'stat2', 'stat3', 'stat4'] as $statKey): ?>
-          <?php 
-          $statType = $dashboardConfig[$statKey];
-          $statInfo = $availableStats[$statType];
-          $statValue = calculateStatValue($statType);
-          $valueStyle = '';
-          
-          // Special styling for certain stats
-          if ($statType === 'last_backup' || $statType === 'server_time') {
-              $valueStyle = 'font-size:20px;';
-          } elseif ($statType === 'security_alerts') {
-              $color = ($statValue > 0) ? '#ef4444' : '#22c55e';
-              $valueStyle = "color:{$color};";
-          } else {
-              $valueStyle = "color:{$statInfo['color']};";
-          }
-          ?>
-          <div class="stat-card">
-            <div class="stat-icon"><?= $statInfo['icon'] ?></div>
-            <div class="stat-label"><?= htmlspecialchars($statInfo['label']) ?></div>
-            <div class="stat-value" style="<?= $valueStyle ?>"><?= htmlspecialchars($statValue) ?></div>
-          </div>
-        <?php endforeach; ?>
+      <div class="stats-container">
+        <div class="stats-grid">
+          <?php foreach (['stat1', 'stat2', 'stat3', 'stat4'] as $statKey): ?>
+            <?php 
+            $statType = $dashboardConfig[$statKey];
+            $statInfo = $availableStats[$statType];
+            $statValue = calculateStatValue($statType);
+            $valueStyle = '';
+            
+            // Special styling for certain stats
+            if ($statType === 'last_backup' || $statType === 'server_time') {
+                $valueStyle = 'font-size:20px;';
+            } elseif ($statType === 'security_alerts') {
+                $color = ($statValue > 0) ? '#ef4444' : '#22c55e';
+                $valueStyle = "color:{$color};";
+            } else {
+                $valueStyle = "color:{$statInfo['color']};";
+            }
+            ?>
+            <div class="stat-item">
+              <div class="stat-icon"><?= $statInfo['icon'] ?></div>
+              <div class="stat-label"><?= htmlspecialchars($statInfo['label']) ?></div>
+              <div class="stat-value" style="<?= $valueStyle ?>"><?= htmlspecialchars($statValue) ?></div>
+            </div>
+          <?php endforeach; ?>
+        </div>
       </div>
 
       <div class="management-grid">

@@ -20,8 +20,7 @@ $settings = file_exists($settingsFile)
 $requireEmail = !empty($settings['require_email_verify']) && $settings['require_email_verify'] !== false && $settings['require_email_verify'] !== 'false' && $settings['require_email_verify'] !== '';
 $requireAdmin = !empty($settings['require_admin_approve']) && $settings['require_admin_approve'] !== false && $settings['require_admin_approve'] !== 'false' && $settings['require_admin_approve'] !== '';
 
-// Debug logging
-error_log("[REGISTER] Settings - requireEmail: " . ($requireEmail ? 'true' : 'false') . ", requireAdmin: " . ($requireAdmin ? 'true' : 'false'));
+// Log registration attempt
 EnderBitLogger::logRegistration('REGISTRATION_ATTEMPT', $email, [
     'username' => $username,
     'require_email' => $requireEmail,
@@ -63,7 +62,7 @@ if (!empty($config['recaptcha_secret'])) {
 $tokensFile = __DIR__ . '/tokens.json';
 if (!file_exists($tokensFile)) {
     if (file_put_contents($tokensFile, json_encode([])) === false) {
-        error_log("Failed to create tokens.json file");
+        EnderBitLogger::logSystem('TOKENS_FILE_CREATION_FAILED', ['action' => 'registration_init']);
         header("Location: signup.php?msg=" . urlencode("System error - please try again") . "&type=error");
         exit;
     }
@@ -83,7 +82,7 @@ foreach ($tokens as $t) {
 
 // CASE 1: No email verification, no admin approval → create immediately
 if (!$requireEmail && !$requireAdmin) {
-    error_log("[REGISTER] CASE 1: Creating user immediately for {$email}");
+    EnderBitLogger::logRegistration('IMMEDIATE_USER_CREATION', $email, ['username' => $username]);
     create_user_on_ptero([
         'first' => $first,
         'last'  => $last,
@@ -110,14 +109,14 @@ $entry = [
 ];
 $tokens[] = $entry;
 if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
-    error_log("Failed to save token to tokens.json");
+    EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'new_registration', 'email' => $email]);
     header("Location: signup.php?msg=" . urlencode("Registration failed - please try again") . "&type=error");
     exit;
 }
 
 // CASE 2: Email verification required (regardless of admin toggle)
 if ($requireEmail) {
-    error_log("[REGISTER] CASE 2: Sending verification email to {$email}");
+    EnderBitLogger::logEmail('VERIFICATION_EMAIL_SENDING', $email, 'Verify your Enderbit account', ['username' => $username]);
     // send verification email
     $verifyUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
         . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/verify.php?token=' . urlencode($token);

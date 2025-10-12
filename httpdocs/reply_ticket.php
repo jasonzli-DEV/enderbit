@@ -70,10 +70,11 @@ for ($i = 0; $i < count($tickets); $i++) {
             
             // Save and redirect immediately for internal notes (no email needed)
             if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) !== false) {
+                EnderBitLogger::logTicket('INTERNAL_NOTE_ADDED', $ticketId, null, ['note_length' => strlen($internalNote)]);
                 header("Location: /ticket/$ticketId?msg=" . urlencode("Internal note added successfully"));
                 exit;
             } else {
-                error_log("Failed to save internal note");
+                EnderBitLogger::logSystem('TICKETS_FILE_WRITE_FAILED', ['action' => 'add_internal_note', 'ticket_id' => $ticketId]);
                 header("Location: /ticket/$ticketId?msg=" . urlencode("Failed to save note. Please try again."));
                 exit;
             }
@@ -155,7 +156,7 @@ if (!$ticketFound) {
 
 // Save tickets
 if (file_put_contents($ticketsFile, json_encode($tickets, JSON_PRETTY_PRINT)) === false) {
-    error_log("Failed to save ticket reply");
+    EnderBitLogger::logSystem('TICKETS_FILE_WRITE_FAILED', ['action' => 'save_ticket_reply', 'ticket_id' => $ticketId]);
     header("Location: /ticket/$ticketId&msg=" . urlencode("Failed to save reply. Please try again."));
     exit;
 }
