@@ -1,28 +1,21 @@
 <?php
 ob_start(); // Start output buffering to allow cookies to be set
 
-// Configure session to close on browser close (unless remember me is used)
-ini_set('session.cookie_lifetime', 0); // Session cookie (closes with browser)
-ini_set('session.gc_maxlifetime', 86400); // 24 hours max session life on server
-
-session_start();
-
-// Handle remember me cookie for persistent login
-if (isset($_COOKIE['admin_remember']) && $_COOKIE['admin_remember'] === 'true') {
-    if (!isset($_SESSION['admin_logged_in'])) {
-        $_SESSION['admin_logged_in'] = true;
-    }
-}
-
+require_once __DIR__ . '/admin_session.php';
+require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/timezone_utils.php';
 
-// Check admin authentication
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+// Initialize and validate admin session
+EnderBitAdminSession::init();
+if (!EnderBitAdminSession::isLoggedIn()) {
     header("Location: admin.php");
     exit;
 }
+
+// Run scheduled tasks
+EnderBitBackgroundTasks::runScheduledTasks();
 
 // Get log file path from query or default to auth log
 $logType = $_GET['type'] ?? 'auth';

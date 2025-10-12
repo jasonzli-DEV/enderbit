@@ -111,22 +111,6 @@ The following files will be auto-created:
 - `settings.json` - Admin settings
 - `deployment.log` - Git deployment logs
 
-### 5. Setup Scheduled Backups (Optional)
-
-To enable automatic scheduled backups, add this to your crontab:
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add this line (runs every hour):
-0 * * * * /usr/bin/php /path/to/httpdocs/cron_backup.php >> /path/to/httpdocs/backup_cron.log 2>&1
-```
-
-Replace `/path/to/httpdocs/` with your actual path.
-
-Enable scheduled backups in the admin panel at **Backup Management** → **Schedule Settings**.
-
 ## Configuration
 
 ### Admin Settings

@@ -1,42 +1,19 @@
 <?php
 ob_start(); // Start output buffering to allow cookies to be set
 
-// Configure session to close on browser close (unless remember me is used)
-ini_set('session.cookie_lifetime', 0); // Session cookie (closes with browser)
-ini_set('session.gc_maxlifetime', 86400); // 24 hours max session life on server
-
-session_start();
-
-// Extend session lifetime for admin (30 days if remember me is used)
-if (isset($_COOKIE['admin_remember']) && $_COOKIE['admin_remember'] === 'true') {
-    // Verify admin is logged in and extend session
-    if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-        // Refresh the remember cookie
-        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
-        
-        // Extend session cookie lifetime to 30 days when remember me is active
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), session_id(), time() + (30 * 24 * 60 * 60), 
-                $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
-        }
-    } elseif (!isset($_SESSION['admin_logged_in'])) {
-        // Auto-login from remember cookie
-        $_SESSION['admin_logged_in'] = true;
-        setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
-    }
-} else {
-    // No remember me cookie - ensure session cookie is set to expire on browser close
-    if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['admin_logged_in'])) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), session_id(), 0, // 0 = session cookie
-            $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
-    }
-}
-
+require_once __DIR__ . '/admin_session.php';
+require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/timezone_utils.php';
+
+// Initialize admin session with time-based validation
+EnderBitAdminSession::init();
+
+// Run background tasks (scheduled backups, etc.) on every admin page load
+if (EnderBitAdminSession::isLoggedIn()) {
+    EnderBitBackgroundTasks::runScheduledTasks();
+}
 
 // Handle AJAX logging for dashboard modal
 if (isset($_POST['action']) && $_POST['action'] === 'log_modal_open' && isset($_SESSION['admin_logged_in'])) {
@@ -98,41 +75,17 @@ if (isset($_POST['logout'])) {
     $settings['require_admin_approve'] = !empty($_POST['require_admin_approve']);
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
     
-    // Clear remember cookie
-    setcookie('admin_remember', '', time() - 3600, '/', '', isset($_SERVER['HTTPS']), true);
-    
-    EnderBitLogger::logAuth('ADMIN_LOGOUT', ['admin' => true]);
-    session_destroy();
+    EnderBitAdminSession::logout();
     header("Location: admin.php?msg=Logged+out&type=success");
     exit;
 }
 
 // Handle login
-if (!isset($_SESSION['admin_logged_in'])) {
+if (!EnderBitAdminSession::isLoggedIn()) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_password'])) {
         if ($_POST['admin_password'] === $config['admin_password']) {
-            $_SESSION['admin_logged_in'] = true;
-            
-            // Set remember me cookie if checked
-            if (isset($_POST['remember_me']) && $_POST['remember_me'] === '1') {
-                setcookie('admin_remember', 'true', time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
-                
-                // Extend session cookie lifetime to 30 days
-                if (session_status() === PHP_SESSION_ACTIVE) {
-                    $params = session_get_cookie_params();
-                    setcookie(session_name(), session_id(), time() + (30 * 24 * 60 * 60), 
-                        $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
-                }
-            } else {
-                // Session cookie only - expires when browser closes
-                if (session_status() === PHP_SESSION_ACTIVE) {
-                    $params = session_get_cookie_params();
-                    setcookie(session_name(), session_id(), 0, 
-                        $params['path'], $params['domain'], isset($_SERVER['HTTPS']), true);
-                }
-            }
-            
-            EnderBitLogger::logAuth('ADMIN_LOGIN_SUCCESS', ['admin' => true, 'remember_me' => isset($_POST['remember_me'])]);
+            $rememberMe = isset($_POST['remember_me']) && $_POST['remember_me'] === '1';
+            EnderBitAdminSession::login($rememberMe);
             header("Location: admin.php");
             exit;
         } else {
