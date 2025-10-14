@@ -18,6 +18,14 @@ A modern hosting panel integration for Pterodactyl with support ticket system.
 - Input sanitization and validation
 - Comprehensive security logging
 
+💾 **Automatic Backups**
+- Scheduled backups (hourly/daily/weekly)
+- No cron jobs or server access required
+- Works with free external services
+- Zero-action setup with external triggers
+- Automatic on admin page loads OR standalone URL
+- See `NO_ACTION_BACKUP_SETUP.md` for details
+
 🎫 **Support Ticket System**
 - Create and manage support tickets
 - Email notifications for all ticket events
