@@ -2,6 +2,10 @@
 require_once __DIR__ . '/admin_session.php';
 require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/security.php';
+
+// Set security headers
+EnderBitSecurity::setSecurityHeaders();
 
 // Initialize and validate admin session
 EnderBitAdminSession::init();

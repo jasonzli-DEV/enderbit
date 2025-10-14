@@ -3,6 +3,10 @@ require_once __DIR__ . '/admin_session.php';
 require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
+require_once __DIR__ . '/security.php';
+
+// Set security headers
+EnderBitSecurity::setSecurityHeaders();
 
 // Initialize and validate admin session
 EnderBitAdminSession::init();
@@ -19,8 +23,15 @@ $msgType = $_GET['type'] ?? 'success';
 
 // Deny pending user
 if (isset($_POST['deny_user'])) {
-    $emailToDeny = $_POST['deny_user'];
-    $denyReason = trim($_POST['deny_reason'] ?? '');
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !EnderBitSecurity::validateCSRFToken($_POST['csrf_token'])) {
+        EnderBitSecurity::logSecurityEvent('CSRF_VALIDATION_FAILED', 'MEDIUM', ['action' => 'deny_user']);
+        header("Location: users_admin.php?msg=" . urlencode("Security validation failed") . "&type=error");
+        exit;
+    }
+    
+    $emailToDeny = EnderBitSecurity::sanitizeInput($_POST['deny_user'], 'email');
+    $denyReason = EnderBitSecurity::sanitizeInput($_POST['deny_reason'] ?? '', 'string');
     
     EnderBitLogger::logAdmin('USER_DENIAL_INITIATED', 'DENY_USER', ['email' => $emailToDeny, 'reason' => $denyReason]);
     
@@ -380,6 +391,7 @@ if (file_exists($tokensFile)) {
       <button class="modal-close" onclick="closeDenyModal()">×</button>
     </div>
     <form method="post">
+      <?= EnderBitSecurity::csrfField() ?>
       <input type="hidden" name="deny_user" id="denyUserEmail" value="">
       <p style="color:var(--muted);margin-bottom:20px;">
         You are about to deny the registration for <strong id="denyUserEmailDisplay"></strong>.

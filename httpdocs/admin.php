@@ -6,6 +6,10 @@ require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/timezone_utils.php';
+require_once __DIR__ . '/security.php';
+
+// Set security headers
+EnderBitSecurity::setSecurityHeaders();
 
 // Initialize admin session with time-based validation
 EnderBitAdminSession::init();
@@ -62,6 +66,13 @@ $settings = json_decode(file_get_contents($settingsFile), true);
 
 // Save and Exit (does NOT log out)
 if (isset($_POST['save_exit'])) {
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !EnderBitSecurity::validateCSRFToken($_POST['csrf_token'])) {
+        EnderBitSecurity::logSecurityEvent('CSRF_VALIDATION_FAILED', 'MEDIUM', ['action' => 'save_exit']);
+        header("Location: admin.php?msg=" . urlencode("Security validation failed") . "&type=error");
+        exit;
+    }
+    
     $settings['require_email_verify'] = !empty($_POST['require_email_verify']);
     $settings['require_admin_approve'] = !empty($_POST['require_admin_approve']);
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -71,6 +82,13 @@ if (isset($_POST['save_exit'])) {
 
 // Logout (saves + logs out)
 if (isset($_POST['logout'])) {
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !EnderBitSecurity::validateCSRFToken($_POST['csrf_token'])) {
+        EnderBitSecurity::logSecurityEvent('CSRF_VALIDATION_FAILED', 'MEDIUM', ['action' => 'logout']);
+        header("Location: admin.php?msg=" . urlencode("Security validation failed") . "&type=error");
+        exit;
+    }
+    
     $settings['require_email_verify'] = !empty($_POST['require_email_verify']);
     $settings['require_admin_approve'] = !empty($_POST['require_admin_approve']);
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -83,23 +101,85 @@ if (isset($_POST['logout'])) {
 // Handle login
 if (!EnderBitAdminSession::isLoggedIn()) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_password'])) {
-        if ($_POST['admin_password'] === $config['admin_password']) {
-            $rememberMe = isset($_POST['remember_me']) && $_POST['remember_me'] === '1';
-            EnderBitAdminSession::login($rememberMe);
-            header("Location: admin.php");
-            exit;
-        } else {
-            EnderBitLogger::logAuth('ADMIN_LOGIN_FAILED', ['admin' => true, 'reason' => 'Invalid password']);
-            EnderBitLogger::logSecurity('ADMIN_LOGIN_ATTEMPT_FAILED', 'MEDIUM', ['reason' => 'Invalid password']);
-            $msg = "Invalid password.";
+        // Validate CSRF token
+        if (!isset($_POST['csrf_token']) || !EnderBitSecurity::validateCSRFToken($_POST['csrf_token'])) {
+            EnderBitSecurity::logSecurityEvent('ADMIN_LOGIN_CSRF_FAILED', 'HIGH', ['admin' => true]);
+            $msg = "Invalid security token. Please try again.";
             $type = "error";
+        } else {
+            // Check rate limiting
+            $clientIP = EnderBitSecurity::getClientIP();
+            $rateLimit = EnderBitSecurity::checkRateLimit($clientIP, 5, 300); // 5 attempts per 5 minutes
+            
+            if (!$rateLimit['allowed']) {
+                EnderBitSecurity::logSecurityEvent('ADMIN_LOGIN_RATE_LIMITED', 'HIGH', [
+                    'admin' => true,
+                    'attempts' => $rateLimit['attempts'],
+                    'wait_seconds' => $rateLimit['wait_seconds']
+                ]);
+                $msg = "Too many login attempts. Please wait " . ceil($rateLimit['wait_seconds'] / 60) . " minutes before trying again.";
+                $type = "error";
+            } else {
+                $password = $_POST['admin_password'];
+                $validPassword = false;
+                
+                // Try hashed password first (new method)
+                if (isset($config['admin_password_hash'])) {
+                    $validPassword = EnderBitSecurity::verifyPassword($password, $config['admin_password_hash']);
+                    
+                    // Check if hash needs updating
+                    if ($validPassword && EnderBitSecurity::needsRehash($config['admin_password_hash'])) {
+                        // Log that rehash is recommended
+                        EnderBitLogger::logSecurity('PASSWORD_REHASH_RECOMMENDED', 'LOW', []);
+                    }
+                }
+                // Fallback to plain password (legacy support)
+                else if (isset($config['admin_password']) && $password === $config['admin_password']) {
+                    $validPassword = true;
+                    // Log that migration is needed
+                    EnderBitLogger::logSecurity('PLAINTEXT_PASSWORD_DETECTED', 'MEDIUM', [
+                        'recommendation' => 'Run migrate_password.php to hash password'
+                    ]);
+                }
+                
+                if ($validPassword) {
+                    // Reset rate limit on successful login
+                    EnderBitSecurity::resetRateLimit($clientIP);
+                    
+                    $rememberMe = isset($_POST['remember_me']) && $_POST['remember_me'] === '1';
+                    EnderBitAdminSession::login($rememberMe);
+                    
+                    EnderBitSecurity::logSecurityEvent('ADMIN_LOGIN_SUCCESS', 'LOW', [
+                        'admin' => true,
+                        'remember_me' => $rememberMe
+                    ]);
+                    
+                    header("Location: admin.php");
+                    exit;
+                } else {
+                    EnderBitLogger::logAuth('ADMIN_LOGIN_FAILED', ['admin' => true, 'reason' => 'Invalid password']);
+                    EnderBitSecurity::logSecurityEvent('ADMIN_LOGIN_ATTEMPT_FAILED', 'MEDIUM', [
+                        'reason' => 'Invalid password',
+                        'remaining_attempts' => $rateLimit['remaining']
+                    ]);
+                    $msg = "Invalid password. " . $rateLimit['remaining'] . " attempts remaining.";
+                    $type = "error";
+                }
+            }
         }
     }
 }
 
 // Approve pending user
 if (isset($_POST['approve_user'])) {
-    $emailToApprove = $_POST['approve_user'];
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !EnderBitSecurity::validateCSRFToken($_POST['csrf_token'])) {
+        EnderBitSecurity::logSecurityEvent('CSRF_VALIDATION_FAILED', 'MEDIUM', ['action' => 'approve_user']);
+        header("Location: admin.php?msg=" . urlencode("Security validation failed") . "&type=error");
+        exit;
+    }
+    
+    $emailToApprove = EnderBitSecurity::sanitizeInput($_POST['approve_user'], 'email');
     EnderBitLogger::logAdmin('USER_APPROVAL_INITIATED', 'APPROVE_USER', ['email' => $emailToApprove]);
     
     $tokensFile = __DIR__ . '/tokens.json';
@@ -385,6 +465,7 @@ $availableStats = [
         <h1 style="text-align:center;">🔐 Admin Login</h1>
         <?php if (!empty($msg)): ?><p style="color:var(--red);text-align:center;margin-top:12px;"><?= htmlspecialchars($msg) ?></p><?php endif; ?>
         <form method="post" style="margin-top:24px;">
+          <?= EnderBitSecurity::csrfField() ?>
           <input type="password" name="admin_password" placeholder="Enter Admin Password" required>
           <label style="margin:16px 0;font-size:14px;">
             <input type="checkbox" name="remember_me" value="1" style="width:auto;margin-right:8px;">
@@ -625,6 +706,7 @@ $availableStats = [
       <div class="card settings-card">
         <h2>⚙️ Settings</h2>
         <form method="post">
+          <?= EnderBitSecurity::csrfField() ?>
           <label>
             <input type="checkbox" name="require_email_verify" <?= !empty($settings['require_email_verify']) ? 'checked':'' ?>> 
             Require Email Verification
@@ -765,6 +847,7 @@ window.addEventListener('click', function(e) {
     <p style="color:var(--muted);margin-bottom:24px;">Choose what information to display in each of the 4 dashboard statistics panels.</p>
     
     <form method="post">
+      <?= EnderBitSecurity::csrfField() ?>
       <?php foreach (['stat1' => 'Left', 'stat2' => 'Middle Left', 'stat3' => 'Middle Right', 'stat4' => 'Right'] as $statKey => $statLabel): ?>
         <div style="margin-bottom:20px;">
           <label style="display:block;color:var(--accent);font-weight:600;margin-bottom:8px;"><?= $statLabel ?></label>
