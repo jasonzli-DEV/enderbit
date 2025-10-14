@@ -1,11 +1,17 @@
 <?php
 /**
- * Standalone Backup Runner
+ * Standalone Backup Runner - TEMPLATE
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to: run_backup.php (same directory)
+ * 2. Change the BACKUP_SECRET_KEY below to a random string (30+ characters)
+ * 3. Test it: https://yourdomain.com/run_backup.php?key=YOUR_KEY
+ * 4. Set up external cron service (see NO_ACTION_BACKUP_SETUP.md)
  * 
  * This file can be called by external cron services (no server access needed)
  * or by simple HTTP requests to run backups automatically.
  * 
- * Usage:
+ * Usage Examples:
  * 1. Via external cron service (e.g., cron-job.org, easycron.com):
  *    URL: https://yourdomain.com/run_backup.php?key=YOUR_SECRET_KEY
  * 
@@ -16,17 +22,23 @@
  *    https://yourdomain.com/run_backup.php?key=YOUR_SECRET_KEY
  */
 
-// Security: Require a secret key to prevent unauthorized backup runs
-$BACKUP_SECRET_KEY = 'CHANGE_THIS_TO_A_RANDOM_STRING'; // TODO: Change this!
+// ============================================================================
+// SECURITY: Change this to a random string!
+// Generate one at: https://www.random.org/strings/
+// Or use: openssl rand -hex 32
+// ============================================================================
+$BACKUP_SECRET_KEY = 'CHANGE_THIS_TO_A_RANDOM_STRING_30_PLUS_CHARACTERS';
 
 // Check for secret key
 $providedKey = $_GET['key'] ?? '';
 if ($providedKey !== $BACKUP_SECRET_KEY) {
     http_response_code(403);
+    header('Content-Type: application/json');
     die(json_encode(['error' => 'Unauthorized', 'message' => 'Invalid or missing key']));
 }
 
 // Load required files
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/background_tasks.php';
 require_once __DIR__ . '/logger.php';
 

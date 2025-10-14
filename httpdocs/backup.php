@@ -340,7 +340,7 @@ if (isset($_POST['update_schedule'])) {
     
     saveSchedule($schedule);
     EnderBitLogger::logAdmin('BACKUP_SCHEDULE_UPDATED', 'UPDATE_SCHEDULE', $schedule);
-    header("Location: backup.php?msg=" . urlencode("Backup schedule updated successfully. Backups will run automatically when admins access the panel.") . "&msgtype=success");
+    header("Location: backup.php?msg=" . urlencode("Backup schedule updated. Backups will run automatically when triggered (admin visits or external URL).") . "&msgtype=success");
     exit;
 }
 
@@ -663,6 +663,9 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             <input type="checkbox" name="schedule_enabled" <?= $schedule['enabled'] ? 'checked' : '' ?>>
             Enable Scheduled Backups
           </label>
+          <p style="font-size:13px; color:var(--muted); margin-top:8px;">
+            Enable this to allow backups to run automatically when triggered.
+          </p>
         </div>
         <div class="form-group">
           <label for="schedule_frequency">Backup Frequency</label>
@@ -671,14 +674,33 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             <option value="daily" <?= ($schedule['frequency'] ?? 'daily') === 'daily' ? 'selected' : '' ?>>Daily</option>
             <option value="weekly" <?= ($schedule['frequency'] ?? 'daily') === 'weekly' ? 'selected' : '' ?>>Weekly</option>
           </select>
+          <p style="font-size:13px; color:var(--muted); margin-top:8px;">
+            This controls how often backups run when triggered (either by admin page visits or external URL).
+          </p>
         </div>
         <?php if (!empty($schedule['last_run'])): ?>
           <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
-            Last scheduled backup: <?= htmlspecialchars($schedule['last_run']) ?>
+            Last scheduled backup: <?= date('Y-m-d H:i:s', $schedule['last_run']) ?>
           </p>
         <?php endif; ?>
         <button type="submit" name="update_schedule" class="btn btn-primary">💾 Save Schedule Settings</button>
       </form>
+      
+      <div style="margin-top:24px; padding:16px; background:var(--input-bg); border-radius:8px; border-left:4px solid var(--accent);">
+        <h3 style="margin-bottom:12px; color:var(--accent);">🌐 External Backup URL</h3>
+        <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">
+          For automatic backups without needing to log in, set up a free external cron service to ping this URL:
+        </p>
+        <code style="display:block; padding:12px; background:var(--card); border-radius:6px; font-size:13px; word-break:break-all; margin-bottom:12px;">
+          https://<?= $_SERVER['HTTP_HOST'] ?>/run_backup.php?key=YOUR_SECRET_KEY
+        </code>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:8px;">
+          📖 See <strong>NO_ACTION_BACKUP_SETUP.md</strong> for complete setup instructions with free services like cron-job.org
+        </p>
+        <p style="font-size:12px; color:var(--muted);">
+          ⚠️ Make sure to set your secret key in <code>run_backup.php</code> first!
+        </p>
+      </div>
     </div>
 
     <!-- Backup Sets -->

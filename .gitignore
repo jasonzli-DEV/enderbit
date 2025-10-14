@@ -1,6 +1,7 @@
 # Sensitive Configuration Files
 config.php
 httpdocs/config.php
+httpdocs/run_backup.php
 
 # AI Instructions (project-specific)
 copilot-instructions.md
@@ -11,6 +12,7 @@ httpdocs/tickets.json
 httpdocs/settings.json
 httpdocs/version.json
 httpdocs/dashboard_config.json
+httpdocs/rate_limits.json
 
 # Uploads (user attachments)
 httpdocs/uploads/
