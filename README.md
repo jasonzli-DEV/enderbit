@@ -8,7 +8,15 @@ A modern hosting panel integration for Pterodactyl with support ticket system.
 - User registration with email verification
 - Optional admin approval workflow
 - Pterodactyl Panel API integration
-- Secure session handling
+- Secure session handling with automatic time-based validation
+
+🔒 **Security Features**
+- Automatic password hashing (Argon2ID)
+- CSRF protection on all admin forms
+- Rate limiting (5 attempts per 5 minutes)
+- Security headers (CSP, X-Frame-Options, etc.)
+- Input sanitization and validation
+- Comprehensive security logging
 
 🎫 **Support Ticket System**
 - Create and manage support tickets
@@ -110,6 +118,14 @@ The following files will be auto-created:
 - `tickets.json` - Support tickets
 - `settings.json` - Admin settings
 - `deployment.log` - Git deployment logs
+
+### 5. Security Features
+
+**Automatic Password Protection:**
+- On your first admin login, the system automatically converts your plain text password to a secure hash
+- No manual migration needed - just log in normally
+- A backup of your config.php is created automatically
+- See `SECURITY_IMPLEMENTATION.md` for full security documentation
 
 ## Configuration
 

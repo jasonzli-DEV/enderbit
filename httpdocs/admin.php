@@ -136,10 +136,46 @@ if (!EnderBitAdminSession::isLoggedIn()) {
                 // Fallback to plain password (legacy support)
                 else if (isset($config['admin_password']) && $password === $config['admin_password']) {
                     $validPassword = true;
-                    // Log that migration is needed
-                    EnderBitLogger::logSecurity('PLAINTEXT_PASSWORD_DETECTED', 'MEDIUM', [
-                        'recommendation' => 'Run migrate_password.php to hash password'
-                    ]);
+                    
+                    // AUTOMATIC MIGRATION: Hash the password and update config.php
+                    try {
+                        $newHash = EnderBitSecurity::hashPassword($password);
+                        $configFile = __DIR__ . '/config.php';
+                        $configContent = file_get_contents($configFile);
+                        
+                        // Create backup before modifying
+                        $backupFile = __DIR__ . '/config.php.backup.' . date('Y-m-d_His');
+                        file_put_contents($backupFile, $configContent);
+                        
+                        // Add hash after admin_password line
+                        $pattern = "/('admin_password'\s*=>\s*'[^']*')/";
+                        $replacement = "$1,\n    'admin_password_hash' => '" . $newHash . "'";
+                        $newContent = preg_replace($pattern, $replacement, $configContent, 1);
+                        
+                        if ($newContent && $newContent !== $configContent) {
+                            file_put_contents($configFile, $newContent);
+                            
+                            // Reload config with new hash
+                            $config['admin_password_hash'] = $newHash;
+                            
+                            EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATED', 'HIGH', [
+                                'success' => true,
+                                'backup_created' => basename($backupFile),
+                                'message' => 'Plain text password automatically hashed on login'
+                            ]);
+                        } else {
+                            // Migration failed, but login still succeeds
+                            EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATION_FAILED', 'MEDIUM', [
+                                'reason' => 'Could not update config.php automatically',
+                                'message' => 'Password hash generated but not saved. Manual migration recommended.'
+                            ]);
+                        }
+                    } catch (Exception $e) {
+                        // Log error but don't block login
+                        EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATION_ERROR', 'MEDIUM', [
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
                 
                 if ($validPassword) {
