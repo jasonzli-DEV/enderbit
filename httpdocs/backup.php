@@ -680,7 +680,7 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
         </div>
         <?php if (!empty($schedule['last_run'])): ?>
           <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
-            Last scheduled backup: <?= date('Y-m-d H:i:s', $schedule['last_run']) ?>
+            Last scheduled backup: <?= is_numeric($schedule['last_run']) ? date('Y-m-d H:i:s', (int)$schedule['last_run']) : htmlspecialchars($schedule['last_run']) ?>
           </p>
         <?php endif; ?>
         <button type="submit" name="update_schedule" class="btn btn-primary">💾 Save Schedule Settings</button>
