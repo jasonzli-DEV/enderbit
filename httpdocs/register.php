@@ -94,7 +94,7 @@ if (!$requireEmail && !$requireAdmin) {
     ]);
     
     // Create app portal account and grant signup credits
-    require_once __DIR__ . '/../app/credits.php';
+    require_once __DIR__ . '/app/credits.php';
     $userId = $email; // Use email as user ID
     EnderBitCredits::grantSignupBonus($userId);
     

@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // In production, you'd validate against Pterodactyl API
         
         // Simple validation - check if user exists in app credits
-        require_once __DIR__ . '/../app/credits.php';
+        require_once __DIR__ . '/app/credits.php';
         $balance = EnderBitCredits::getBalance($email);
         
         if ($balance >= 0) {
