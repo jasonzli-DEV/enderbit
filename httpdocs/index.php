@@ -2,6 +2,10 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logger.php';
+require_once __DIR__ . '/background_tasks.php';
+
+// Run scheduled tasks on every page load (backups, etc.)
+EnderBitBackgroundTasks::runScheduledTasks();
 
 // Log page load performance
 EnderBitLogger::logPerformance('PAGE_LOAD_START', ['page' => 'index']);

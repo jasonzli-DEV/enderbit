@@ -25,7 +25,59 @@ class EnderBitBackgroundTasks {
     public static function runScheduledTasks() {
         self::init();
         self::checkScheduledBackup();
+        self::checkHourlyBilling();
         // Add more scheduled tasks here in the future
+    }
+    
+    /**
+     * Check if hourly billing should run
+     */
+    private static function checkHourlyBilling() {
+        // Check if app billing system exists
+        $billingFile = __DIR__ . '/../app/billing.php';
+        if (!file_exists($billingFile)) {
+            return false;
+        }
+        
+        // Load billing schedule
+        $billingScheduleFile = __DIR__ . '/../app/billing_schedule.json';
+        $billingSchedule = [];
+        
+        if (file_exists($billingScheduleFile)) {
+            $billingSchedule = json_decode(file_get_contents($billingScheduleFile), true) ?? [];
+        }
+        
+        $lastRun = $billingSchedule['last_run'] ?? 0;
+        $now = time();
+        
+        // Check if at least 1 hour has passed since last billing run
+        $hoursSinceLastRun = ($now - $lastRun) / 3600;
+        
+        if ($hoursSinceLastRun >= 1) {
+            try {
+                require_once $billingFile;
+                $result = EnderBitBilling::processHourlyBilling();
+                
+                // Update last run time
+                $billingSchedule['last_run'] = $now;
+                $billingSchedule['last_result'] = $result;
+                file_put_contents($billingScheduleFile, json_encode($billingSchedule, JSON_PRETTY_PRINT));
+                
+                EnderBitLogger::logSystem('BILLING_RUN', 'BACKGROUND_TASK', [
+                    'billed' => $result['billed'],
+                    'suspended' => $result['suspended']
+                ]);
+                
+                return true;
+            } catch (Exception $e) {
+                EnderBitLogger::logSystem('BILLING_ERROR', 'BACKGROUND_TASK', [
+                    'error' => $e->getMessage()
+                ]);
+                return false;
+            }
+        }
+        
+        return false;
     }
     
     /**

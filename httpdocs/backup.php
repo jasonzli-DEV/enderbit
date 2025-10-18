@@ -340,7 +340,7 @@ if (isset($_POST['update_schedule'])) {
     
     saveSchedule($schedule);
     EnderBitLogger::logAdmin('BACKUP_SCHEDULE_UPDATED', 'UPDATE_SCHEDULE', $schedule);
-    header("Location: backup.php?msg=" . urlencode("Backup schedule updated. Backups will run automatically when triggered (admin visits or external URL).") . "&msgtype=success");
+    header("Location: backup.php?msg=" . urlencode("Backup schedule updated. Backups will run automatically on any page visit when the time interval is reached.") . "&msgtype=success");
     exit;
 }
 
@@ -664,7 +664,7 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             Enable Scheduled Backups
           </label>
           <p style="font-size:13px; color:var(--muted); margin-top:8px;">
-            Enable this to allow backups to run automatically when triggered.
+            When enabled, backups will run automatically based on the frequency you set below. The system checks the time on every page visit (any visitor, not just admins).
           </p>
         </div>
         <div class="form-group">
@@ -675,7 +675,7 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
             <option value="weekly" <?= ($schedule['frequency'] ?? 'daily') === 'weekly' ? 'selected' : '' ?>>Weekly</option>
           </select>
           <p style="font-size:13px; color:var(--muted); margin-top:8px;">
-            This controls how often backups run when triggered (either by admin page visits or external URL).
+            The system compares current time vs. last backup time. When the interval is reached, a new backup runs automatically on the next page visit.
           </p>
         </div>
         <?php if (!empty($schedule['last_run'])): ?>
@@ -686,19 +686,17 @@ if (isset($metadata['sets']) && is_array($metadata['sets'])) {
         <button type="submit" name="update_schedule" class="btn btn-primary">💾 Save Schedule Settings</button>
       </form>
       
-      <div style="margin-top:24px; padding:16px; background:var(--input-bg); border-radius:8px; border-left:4px solid var(--accent);">
-        <h3 style="margin-bottom:12px; color:var(--accent);">🌐 External Backup URL</h3>
-        <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">
-          For automatic backups without needing to log in, set up a free external cron service to ping this URL:
-        </p>
-        <code style="display:block; padding:12px; background:var(--card); border-radius:6px; font-size:13px; word-break:break-all; margin-bottom:12px;">
-          https://<?= $_SERVER['HTTP_HOST'] ?>/run_backup.php?key=YOUR_SECRET_KEY
-        </code>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:8px;">
-          📖 See <strong>NO_ACTION_BACKUP_SETUP.md</strong> for complete setup instructions with free services like cron-job.org
-        </p>
-        <p style="font-size:12px; color:var(--muted);">
-          ⚠️ Make sure to set your secret key in <code>run_backup.php</code> first!
+      <div style="margin-top:24px; padding:16px; background:var(--input-bg); border-radius:8px; border-left:4px solid var(--green);">
+        <h3 style="margin-bottom:12px; color:var(--green);">✅ How Automatic Backups Work</h3>
+        <ul style="font-size:14px; color:var(--muted); margin-left:20px; line-height:1.8;">
+          <li>Backups run automatically when <strong>anyone</strong> visits your site</li>
+          <li>System checks: current time - last backup time ≥ frequency interval</li>
+          <li>If true, backup runs in the background</li>
+          <li>No cron jobs or external services needed</li>
+          <li>No admin login required</li>
+        </ul>
+        <p style="font-size:13px; color:var(--muted); margin-top:12px;">
+          � <strong>Example:</strong> If frequency is "Daily" and last backup was 25 hours ago, the next page visit will trigger a backup.
         </p>
       </div>
     </div>

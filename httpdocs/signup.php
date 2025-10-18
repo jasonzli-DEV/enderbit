@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/background_tasks.php';
+EnderBitBackgroundTasks::runScheduledTasks();
 
 // ensure settings exist so reCAPTCHA key is available
 $settingsFile = __DIR__ . '/settings.json';

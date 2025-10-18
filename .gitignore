@@ -1,7 +1,7 @@
 # Sensitive Configuration Files
 config.php
 httpdocs/config.php
-httpdocs/run_backup.php
+app/config.php
 
 # AI Instructions (project-specific)
 copilot-instructions.md
@@ -14,6 +14,11 @@ httpdocs/version.json
 httpdocs/dashboard_config.json
 httpdocs/rate_limits.json
 
+# App Portal Data (credit system)
+app/credits.json
+app/transactions.json
+app/servers.json
+
 # Uploads (user attachments)
 httpdocs/uploads/
 
@@ -21,6 +26,7 @@ httpdocs/uploads/
 *.log
 httpdocs/*.log
 httpdocs/deployment.log
+app/*.log
 
 # macOS
 .DS_Store

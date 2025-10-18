@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/background_tasks.php';
+EnderBitBackgroundTasks::runScheduledTasks();
 
 $ticketId = $_GET['id'] ?? '';
 if (empty($ticketId)) {
