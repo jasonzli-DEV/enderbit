@@ -5,7 +5,7 @@ require_once __DIR__ . '/credits.php';
 
 // Check if user is logged in (simple check - you may want to integrate with main site auth)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /httpdocs/index.php');
+    header('Location: https://enderbit.com/');
     exit;
 }
 

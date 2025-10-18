@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/billing.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /httpdocs/index.php');
+    header('Location: https://enderbit.com/');
     exit;
 }
 

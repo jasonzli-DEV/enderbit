@@ -5,7 +5,7 @@ require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/pterodactyl_api.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /httpdocs/index.php');
+    header('Location: https://enderbit.com/');
     exit;
 }
 

@@ -1,0 +1,65 @@
+# EnderBit App Portal - Apache Configuration
+# app.enderbit.com
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Force HTTPS (recommended for production)
+    # Uncomment these lines after SSL is set up:
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Protect sensitive files
+    RewriteRule ^config\.php$ - [F,L]
+    RewriteRule ^credits\.php$ - [F,L]
+    RewriteRule ^billing\.php$ - [F,L]
+    RewriteRule ^pterodactyl_api\.php$ - [F,L]
+    RewriteRule ^ayetstudios\.php$ - [F,L]
+    RewriteRule ^\.git - [F,L]
+    RewriteRule ^.*\.json$ - [F,L]
+
+    # Allow access to CSS, JS, and image files
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf)$ - [L]
+
+    # Route to index.php if file doesn't exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.php [L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Protect configuration files
+<FilesMatch "\.(json|md|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# PHP settings
+<IfModule mod_php7.c>
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.cookie_samesite "Strict"
+</IfModule>
+
+# Enable compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+</IfModule>
+
+# Browser caching for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
