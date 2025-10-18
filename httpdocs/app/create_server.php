@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/pterodactyl_api.php';
 
