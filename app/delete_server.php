@@ -19,6 +19,12 @@ if (empty($serverId)) {
 // Load servers
 $config = require __DIR__ . '/config.php';
 $serversFile = $config['servers_file'];
+
+if (!file_exists($serversFile)) {
+    header('Location: index.php?msg=' . urlencode('No servers found') . '&msgtype=error');
+    exit;
+}
+
 $servers = json_decode(file_get_contents($serversFile), true) ?? [];
 
 // Find and delete server

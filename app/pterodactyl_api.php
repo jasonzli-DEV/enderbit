@@ -174,6 +174,7 @@ class PterodactylAPI {
      * Save server to local database
      */
     private static function saveServerToDatabase($userId, $pterodactylId, $name, $game, $plan) {
+        require_once __DIR__ . '/credits.php';
         $appConfig = require __DIR__ . '/config.php';
         $serversFile = $appConfig['servers_file'];
         $servers = json_decode(file_get_contents($serversFile), true) ?? [];

@@ -15,6 +15,9 @@ $balance = EnderBitCredits::getBalance($userId);
 // Load user's servers
 $config = require __DIR__ . '/config.php';
 $serversFile = $config['servers_file'];
+if (!file_exists($serversFile)) {
+    file_put_contents($serversFile, '[]');
+}
 $allServers = json_decode(file_get_contents($serversFile), true) ?? [];
 $userServers = array_filter($allServers, function($s) use ($userId) {
     return $s['user_id'] === $userId;

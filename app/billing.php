@@ -16,6 +16,9 @@ class EnderBitBilling {
         
         $config = require __DIR__ . '/config.php';
         $serversFile = $config['servers_file'];
+        if (!file_exists($serversFile)) {
+            return ['billed' => 0, 'suspended' => 0];
+        }
         $servers = json_decode(file_get_contents($serversFile), true) ?? [];
         
         $billedCount = 0;
