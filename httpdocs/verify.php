@@ -68,15 +68,25 @@ if (!$requireAdmin) {
         'password' => $password
     ]);
 
+    // Create app portal account and grant signup credits
+    require_once __DIR__ . '/../app/credits.php';
+    $userId = $user['email'];
+    EnderBitCredits::grantSignupBonus($userId);
+    
+    // Log them in automatically
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_username'] = $user['username'] ?? '';
+
     // Remove from pending list
     array_splice($tokens, $foundIndex, 1);
     if (file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT)) === false) {
-        EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'email_verification', 'email' => $entry['email']]);
+        EnderBitLogger::logSystem('TOKENS_FILE_WRITE_FAILED', ['action' => 'email_verification', 'email' => $user['email']]);
     }
 
     if ($result) {
         EnderBitLogger::logRegistration('USER_CREATED_AFTER_VERIFICATION', $user['email'], ['username' => $user['username'] ?? 'N/A']);
-        header("Location: signup.php?msg=" . urlencode("Email verified — account created successfully!") . "&type=success");
+        header("Location: signup.php?msg=" . urlencode("Email verified — account created successfully! You received 100 free credits!") . "&type=success");
         exit;
     } else {
         EnderBitLogger::logSystem('USER_CREATION_FAILED_AFTER_VERIFICATION', ['email' => $user['email']]);

@@ -123,10 +123,14 @@ $recentTransactions = EnderBitCredits::getTransactions($userId, 10);
 <body>
     <div class="container" style="max-width: 1400px; margin: 40px auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-            <h1>🎮 Client Portal</h1>
-            <div style="display: flex; gap: 16px; align-items: center;">
+            <div>
+                <h1>🎮 Client Portal</h1>
+                <p style="color: var(--muted); margin-top: 4px;">Welcome, <?= htmlspecialchars($_SESSION['user_email'] ?? 'User') ?>!</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
                 <a href="earn_credits.php" class="btn btn-secondary">⚡ Earn Free Credits</a>
                 <a href="/" class="btn">🏠 Main Site</a>
+                <a href="/logout.php" class="btn" style="background: var(--red); color: white;">Logout</a>
             </div>
         </div>
 

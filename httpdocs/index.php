@@ -372,7 +372,11 @@ EnderBitLogger::logPerformance('PAGE_LOAD_START', ['page' => 'index']);
         <a href="/services.php">Services</a>
         <a href="/app/">🎮 Client Portal</a>
         <a href="/signup.php">Sign Up</a>
-        <a href="<?= htmlspecialchars($config['ptero_url'] ?? '#') ?>" target="_blank">Login</a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+          <a href="/app/" class="btn-nav">Dashboard</a>
+        <?php else: ?>
+          <a href="/login.php" class="btn-nav">Login</a>
+        <?php endif; ?>
         <div class="dropdown">
           <a href="#">Support ▼</a>
           <div class="dropdown-content">

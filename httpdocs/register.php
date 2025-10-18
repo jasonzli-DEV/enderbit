@@ -83,6 +83,8 @@ foreach ($tokens as $t) {
 // CASE 1: No email verification, no admin approval → create immediately
 if (!$requireEmail && !$requireAdmin) {
     EnderBitLogger::logRegistration('IMMEDIATE_USER_CREATION', $email, ['username' => $username]);
+    
+    // Create Pterodactyl panel account
     create_user_on_ptero([
         'first' => $first,
         'last'  => $last,
@@ -90,7 +92,20 @@ if (!$requireEmail && !$requireAdmin) {
         'email' => $email,
         'password' => $password
     ]);
-    header("Location: signup.php?msg=" . urlencode("Account created successfully") . "&type=success");
+    
+    // Create app portal account and grant signup credits
+    require_once __DIR__ . '/../app/credits.php';
+    $userId = $email; // Use email as user ID
+    EnderBitCredits::grantSignupBonus($userId);
+    
+    // Log them in automatically
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['user_email'] = $email;
+    $_SESSION['user_username'] = $username;
+    
+    EnderBitLogger::logRegistration('USER_LOGGED_IN', $email, ['username' => $username]);
+    
+    header("Location: signup.php?msg=" . urlencode("Account created successfully! You received 100 free credits!") . "&type=success");
     exit;
 }
 
