@@ -29,10 +29,10 @@ $recentTransactions = EnderBitCredits::getTransactions($userId, 10);
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
+        <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - EnderBit Client Portal</title>
-    <link rel="stylesheet" href="/httpdocs/style.css">
+    <title>Dashboard - EnderBit</title>
+    <link rel="stylesheet" href="/style.css">
     <style>
         .dashboard-grid {
             display: grid;
@@ -127,7 +127,7 @@ $recentTransactions = EnderBitCredits::getTransactions($userId, 10);
             <h1>🎮 Client Portal</h1>
             <div style="display: flex; gap: 16px; align-items: center;">
                 <a href="earn_credits.php" class="btn btn-secondary">⚡ Earn Free Credits</a>
-                <a href="../httpdocs/admin.php" class="btn">🏠 Main Site</a>
+                <a href="/" class="btn">🏠 Main Site</a>
             </div>
         </div>
 
