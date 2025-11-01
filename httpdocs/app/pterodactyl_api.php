@@ -231,30 +231,16 @@ class PterodactylAPI {
      * Get nest ID for game type
      */
     private static function getNestId($game) {
-        // Most games use nest 1 (Minecraft) or nest 2 (Generic Games)
-        // You may need to adjust these based on your Pterodactyl nests
-        $nestMap = [
-            'minecraft' => 1,
-            'rust' => 2,
-            'valheim' => 2,
-            'terraria' => 2,
-            'ark' => 2,
-        ];
-        return $nestMap[$game] ?? 1;
+        self::init();
+        return self::$config['nests'][$game] ?? 1;
     }
     
     /**
      * Get egg ID for game type
      */
     private static function getEggId($game) {
-        $eggMap = [
-            'minecraft' => 1,
-            'rust' => 2,
-            'valheim' => 3,
-            'terraria' => 4,
-            'ark' => 5,
-        ];
-        return $eggMap[$game] ?? 1;
+        self::init();
+        return self::$config['eggs'][$game] ?? 1;
     }
     
     /**
