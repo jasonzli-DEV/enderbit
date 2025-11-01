@@ -144,7 +144,7 @@ $surveyWallUrl = CPXResearch::getSurveyWallUrl($userId);
 
             <?php if ($surveyWallUrl): ?>
                 <div class="offerwall-container">
-                    <?= CPXResearch::getSurveyWallEmbed($userId, '100%', '700px') ?>
+                    <?= CPXResearch::getSurveyWallEmbed($userId, '100%', '2000px') ?>
                 </div>
             <?php else: ?>
                 <div style="text-align: center; padding: 60px 20px; background: var(--input-bg); border-radius: 12px;">

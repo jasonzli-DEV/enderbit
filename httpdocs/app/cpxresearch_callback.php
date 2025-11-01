@@ -2,58 +2,119 @@
 /**
  * CPX Research Callback Handler
  * Receives and processes reward notifications from CPX Research
+ * 
+ * CPX Research sends callbacks with these parameters:
+ * - user_id: Your ext_user_id
+ * - transaction_id: Unique transaction ID
+ * - currency_amount: Amount in your local currency
+ * - payout: Payout amount
+ * - type: Survey type (survey, video, offer, etc.)
+ * - status: Transaction status (active, completed, reversed)
  */
 
-header('Content-Type: application/json');
+// Set response type
+header('Content-Type: text/plain');
 
 require_once __DIR__ . '/cpxresearch.php';
 
-// Get callback parameters (CPX Research uses different parameter names)
+// Get callback parameters from CPX Research
+// They can send via GET or POST
 $userId = $_GET['user_id'] ?? $_POST['user_id'] ?? '';
-$amount = $_GET['reward_amount'] ?? $_POST['reward_amount'] ?? 0;
 $transactionId = $_GET['transaction_id'] ?? $_POST['transaction_id'] ?? '';
-$hash = $_GET['hash'] ?? $_POST['hash'] ?? '';
-$surveyName = $_GET['survey_name'] ?? $_POST['survey_name'] ?? 'Survey';
+$currencyAmount = $_GET['currency_amount'] ?? $_POST['currency_amount'] ?? 0;
+$payout = $_GET['payout'] ?? $_POST['payout'] ?? 0;
+$type = $_GET['type'] ?? $_POST['type'] ?? 'survey';
+$status = $_GET['status'] ?? $_POST['status'] ?? 'completed';
 
-// Log incoming callback for debugging
+// Log ALL incoming parameters for debugging
 $logFile = __DIR__ . '/cpxresearch_callbacks.log';
+$allParams = array_merge($_GET, $_POST);
 $logEntry = sprintf(
-    "[%s] Callback received - User: %s | Amount: %s | TxnID: %s | Survey: %s\n",
+    "[%s] Callback received - Raw params: %s\n",
     date('Y-m-d H:i:s'),
-    $userId,
-    $amount,
-    $transactionId,
-    $surveyName
+    json_encode($allParams)
 );
 file_put_contents($logFile, $logEntry, FILE_APPEND);
 
 // Validate required parameters
-if (empty($userId) || empty($amount) || empty($transactionId) || empty($hash)) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Missing required parameters'
-    ]);
+if (empty($userId) || empty($transactionId)) {
+    $logEntry = sprintf(
+        "[%s] ERROR: Missing required parameters - User: %s | TxnID: %s\n",
+        date('Y-m-d H:i:s'),
+        $userId,
+        $transactionId
+    );
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    echo "error: missing parameters";
     exit;
 }
 
-// Verify hash
-if (!CPXResearch::verifyCallback($userId, $amount, $transactionId, $hash)) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Invalid hash'
-    ]);
+// Verify callback (basic validation)
+$params = [
+    'user_id' => $userId,
+    'transaction_id' => $transactionId,
+    'currency_amount' => $currencyAmount,
+    'payout' => $payout,
+    'type' => $type,
+    'status' => $status,
+];
+
+if (!CPXResearch::verifyCallback($params)) {
+    $logEntry = sprintf(
+        "[%s] ERROR: Callback validation failed - User: %s | TxnID: %s\n",
+        date('Y-m-d H:i:s'),
+        $userId,
+        $transactionId
+    );
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    echo "error: validation failed";
     exit;
 }
+
+// Only process if status is completed or active
+if ($status !== 'completed' && $status !== 'active') {
+    $logEntry = sprintf(
+        "[%s] SKIPPED: Status is %s (not completed/active) - User: %s | TxnID: %s\n",
+        date('Y-m-d H:i:s'),
+        $status,
+        $userId,
+        $transactionId
+    );
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    echo "ok"; // Still respond OK to CPX
+    exit;
+}
+
+// Use payout amount (this is what user earned)
+$amount = !empty($payout) ? $payout : $currencyAmount;
 
 // Process the reward
-if (CPXResearch::processReward($userId, $amount, $transactionId, $surveyName)) {
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Reward processed'
-    ]);
+if (CPXResearch::processReward($userId, $amount, $transactionId, $type, $status)) {
+    $logEntry = sprintf(
+        "[%s] SUCCESS: Reward processed - User: %s | Amount: %s | TxnID: %s | Type: %s\n",
+        date('Y-m-d H:i:s'),
+        $userId,
+        $amount,
+        $transactionId,
+        $type
+    );
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    // CPX Research expects simple "ok" response
+    echo "ok";
 } else {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Failed to process reward'
-    ]);
+    $logEntry = sprintf(
+        "[%s] ERROR: Failed to process reward - User: %s | Amount: %s | TxnID: %s\n",
+        date('Y-m-d H:i:s'),
+        $userId,
+        $amount,
+        $transactionId
+    );
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    echo "error: processing failed";
 }
+
