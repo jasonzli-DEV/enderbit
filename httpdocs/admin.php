@@ -20,7 +20,7 @@ if (EnderBitAdminSession::isLoggedIn()) {
 }
 
 // Handle AJAX logging for dashboard modal
-if (isset($_POST['action']) && $_POST['action'] === 'log_modal_open' && isset($_SESSION['admin_logged_in'])) {
+if (isset($_POST['action']) && $_POST['action'] === 'log_modal_open' && EnderBitAdminSession::isLoggedIn()) {
     EnderBitLogger::logAdmin('DASHBOARD_CUSTOMIZE_MODAL_OPENED', 'VIEW_CUSTOMIZE_MODAL', [
         'timestamp' => date('Y-m-d H:i:s')
     ]);
@@ -121,62 +121,9 @@ if (!EnderBitAdminSession::isLoggedIn()) {
                 $type = "error";
             } else {
                 $password = $_POST['admin_password'];
-                $validPassword = false;
                 
-                // Try hashed password first (new method)
-                if (isset($config['admin_password_hash'])) {
-                    $validPassword = EnderBitSecurity::verifyPassword($password, $config['admin_password_hash']);
-                    
-                    // Check if hash needs updating
-                    if ($validPassword && EnderBitSecurity::needsRehash($config['admin_password_hash'])) {
-                        // Log that rehash is recommended
-                        EnderBitLogger::logSecurity('PASSWORD_REHASH_RECOMMENDED', 'LOW', []);
-                    }
-                }
-                // Fallback to plain password (legacy support)
-                else if (isset($config['admin_password']) && $password === $config['admin_password']) {
-                    $validPassword = true;
-                    
-                    // AUTOMATIC MIGRATION: Hash the password and update config.php
-                    try {
-                        $newHash = EnderBitSecurity::hashPassword($password);
-                        $configFile = __DIR__ . '/config.php';
-                        $configContent = file_get_contents($configFile);
-                        
-                        // Create backup before modifying
-                        $backupFile = __DIR__ . '/config.php.backup.' . date('Y-m-d_His');
-                        file_put_contents($backupFile, $configContent);
-                        
-                        // Add hash after admin_password line
-                        $pattern = "/('admin_password'\s*=>\s*'[^']*')/";
-                        $replacement = "$1,\n    'admin_password_hash' => '" . $newHash . "'";
-                        $newContent = preg_replace($pattern, $replacement, $configContent, 1);
-                        
-                        if ($newContent && $newContent !== $configContent) {
-                            file_put_contents($configFile, $newContent);
-                            
-                            // Reload config with new hash
-                            $config['admin_password_hash'] = $newHash;
-                            
-                            EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATED', 'HIGH', [
-                                'success' => true,
-                                'backup_created' => basename($backupFile),
-                                'message' => 'Plain text password automatically hashed on login'
-                            ]);
-                        } else {
-                            // Migration failed, but login still succeeds
-                            EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATION_FAILED', 'MEDIUM', [
-                                'reason' => 'Could not update config.php automatically',
-                                'message' => 'Password hash generated but not saved. Manual migration recommended.'
-                            ]);
-                        }
-                    } catch (Exception $e) {
-                        // Log error but don't block login
-                        EnderBitLogger::logSecurity('PASSWORD_AUTO_MIGRATION_ERROR', 'MEDIUM', [
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                }
+                // Simple plain text password comparison
+                $validPassword = isset($config['admin_password']) && $password === $config['admin_password'];
                 
                 if ($validPassword) {
                     // Reset rate limit on successful login
@@ -495,8 +442,8 @@ $availableStats = [
   <?php endif; ?>
 
 <div class="page">
-  <div class="<?= !isset($_SESSION['admin_logged_in']) ? 'login-wrapper' : 'container' ?>">
-    <?php if (!isset($_SESSION['admin_logged_in'])): ?>
+  <div class="<?= !EnderBitAdminSession::isLoggedIn() ? 'login-wrapper' : 'container' ?>">
+    <?php if (!EnderBitAdminSession::isLoggedIn()): ?>
       <div class="card login-card">
         <h1 style="text-align:center;">🔐 Admin Login</h1>
         <?php if (!empty($msg)): ?><p style="color:var(--red);text-align:center;margin-top:12px;"><?= htmlspecialchars($msg) ?></p><?php endif; ?>

@@ -13,13 +13,13 @@ return [
     'servers_file' => __DIR__ . '/servers.json',
     'users_file' => __DIR__ . '/../httpdocs/users.json', // Shared with main site
     
-    // AyeT Studios API Configuration
-    'ayetstudios' => [
+    // CPX Research API Configuration
+    'cpxresearch' => [
         'enabled' => true,
-        'app_id' => '', // Your AyeT Studios App ID
-        'secret_key' => '', // Your AyeT Studios Secret Key
-        'offerwall_url' => 'https://www.ayetstudios.com/offers/web_offerwall/',
-        'api_url' => 'https://www.ayetstudios.com/api/',
+        'app_id' => '', // Your CPX Research App ID
+        'secret_key' => '', // Your CPX Research Secret Key
+        'survey_url' => 'https://offers.cpx-research.com/index.php',
+        'api_url' => 'https://offers.cpx-research.com/api/',
     ],
     
     // Pterodactyl Panel Configuration

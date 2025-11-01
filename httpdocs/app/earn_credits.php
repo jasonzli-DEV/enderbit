@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/credits.php';
-require_once __DIR__ . '/ayetstudios.php';
+require_once __DIR__ . '/cpxresearch.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: https://enderbit.com/');
@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 $balance = EnderBitCredits::getBalance($userId);
-$offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
+$surveyWallUrl = CPXResearch::getSurveyWallUrl($userId);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -87,7 +87,7 @@ $offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
 
         <h1>⚡ Earn Free Credits</h1>
         <p style="color: var(--muted); margin-bottom: 32px;">
-            Complete offers, watch videos, and participate in surveys to earn credits for your servers!
+            Complete surveys to earn credits for your servers!
         </p>
 
         <!-- Current Balance -->
@@ -99,30 +99,6 @@ $offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
         <!-- Earning Methods -->
         <div class="earn-grid">
             <div class="earn-card">
-                <div class="earn-icon">🎁</div>
-                <div class="earn-title">Complete Offers</div>
-                <div class="earn-description">
-                    Download apps, sign up for services, and complete simple tasks to earn credits
-                </div>
-                <div style="color: var(--accent); font-size: 18px; font-weight: 600; margin-bottom: 12px;">
-                    Earn up to ⚡1,000 per offer
-                </div>
-                <a href="#offerwall" class="btn btn-primary">Start Earning</a>
-            </div>
-
-            <div class="earn-card">
-                <div class="earn-icon">📺</div>
-                <div class="earn-title">Watch Videos</div>
-                <div class="earn-description">
-                    Watch short video ads and earn credits instantly. Quick and easy!
-                </div>
-                <div style="color: var(--accent); font-size: 18px; font-weight: 600; margin-bottom: 12px;">
-                    Earn ⚡5-20 per video
-                </div>
-                <a href="#offerwall" class="btn btn-primary">Watch Now</a>
-            </div>
-
-            <div class="earn-card">
                 <div class="earn-icon">📝</div>
                 <div class="earn-title">Take Surveys</div>
                 <div class="earn-description">
@@ -131,27 +107,51 @@ $offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
                 <div style="color: var(--accent); font-size: 18px; font-weight: 600; margin-bottom: 12px;">
                     Earn ⚡50-500 per survey
                 </div>
-                <a href="#offerwall" class="btn btn-primary">Start Survey</a>
+                <a href="#surveywall" class="btn btn-primary">Start Survey</a>
+            </div>
+
+            <div class="earn-card">
+                <div class="earn-icon">⚡</div>
+                <div class="earn-title">Quick & Easy</div>
+                <div class="earn-description">
+                    Surveys are quick to complete and credits are awarded instantly
+                </div>
+                <div style="color: var(--accent); font-size: 18px; font-weight: 600; margin-bottom: 12px;">
+                    Average: ⚡200 per survey
+                </div>
+                <a href="#surveywall" class="btn btn-primary">Get Started</a>
+            </div>
+
+            <div class="earn-card">
+                <div class="earn-icon">🎯</div>
+                <div class="earn-title">Unlimited Earnings</div>
+                <div class="earn-description">
+                    Complete as many surveys as you want - no daily limits!
+                </div>
+                <div style="color: var(--accent); font-size: 18px; font-weight: 600; margin-bottom: 12px;">
+                    No Limits
+                </div>
+                <a href="#surveywall" class="btn btn-primary">Start Now</a>
             </div>
         </div>
 
-        <!-- Offerwall Section -->
-        <div class="card" id="offerwall">
-            <h2>🎯 Offerwall - Complete & Earn</h2>
+        <!-- Survey Wall Section -->
+        <div class="card" id="surveywall">
+            <h2>📝 Survey Wall - Complete & Earn</h2>
             <p style="color: var(--muted); margin-bottom: 24px;">
-                Browse available offers below and start earning credits instantly. Credits are added to your account automatically!
+                Browse available surveys below and start earning credits instantly. Credits are added to your account automatically!
             </p>
 
-            <?php if ($offerwallUrl): ?>
+            <?php if ($surveyWallUrl): ?>
                 <div class="offerwall-container">
-                    <?= AyeTStudios::getOfferwallEmbed($userId, '100%', '700px') ?>
+                    <?= CPXResearch::getSurveyWallEmbed($userId, '100%', '700px') ?>
                 </div>
             <?php else: ?>
                 <div style="text-align: center; padding: 60px 20px; background: var(--input-bg); border-radius: 12px;">
                     <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-                    <h3 style="margin-bottom: 12px;">Offerwall Currently Unavailable</h3>
+                    <h3 style="margin-bottom: 12px;">Survey Wall Currently Unavailable</h3>
                     <p style="color: var(--muted);">
-                        The offerwall is currently being configured. Please check back soon!
+                        The survey wall is currently being configured. Please check back soon!
                     </p>
                 </div>
             <?php endif; ?>
@@ -163,16 +163,16 @@ $offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-top: 20px;">
                 <div>
                     <div style="font-size: 32px; margin-bottom: 12px;">1️⃣</div>
-                    <h3 style="font-size: 16px; margin-bottom: 8px;">Choose an Offer</h3>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Choose a Survey</h3>
                     <p style="color: var(--muted); font-size: 14px;">
-                        Browse the offerwall and select an offer that interests you
+                        Browse the survey wall and select a survey that interests you
                     </p>
                 </div>
                 <div>
                     <div style="font-size: 32px; margin-bottom: 12px;">2️⃣</div>
-                    <h3 style="font-size: 16px; margin-bottom: 8px;">Complete the Task</h3>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Complete the Survey</h3>
                     <p style="color: var(--muted); font-size: 14px;">
-                        Follow the instructions to complete the offer requirements
+                        Answer questions honestly and completely
                     </p>
                 </div>
                 <div>
@@ -196,9 +196,9 @@ $offerwallUrl = AyeTStudios::getOfferwallUrl($userId);
         <div class="card" style="margin-top: 32px; background: rgba(10, 132, 255, 0.1); border-color: var(--accent);">
             <h2>💡 Pro Tips</h2>
             <ul style="margin: 16px 0; padding-left: 24px; color: var(--muted); line-height: 1.8;">
-                <li>Complete high-value offers for maximum credits</li>
-                <li>Check back daily for new offers</li>
-                <li>Read offer requirements carefully before starting</li>
+                <li>Answer surveys honestly for better matching</li>
+                <li>Check back daily for new surveys</li>
+                <li>Complete your profile for more survey opportunities</li>
                 <li>Credits typically appear within 5-15 minutes after completion</li>
                 <li>Contact support if credits don't appear after 24 hours</li>
             </ul>

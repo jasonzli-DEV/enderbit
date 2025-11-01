@@ -63,10 +63,22 @@ class EnderBitSecurity {
      * @return string The hashed password
      */
     public static function hashPassword($password) {
-        return password_hash($password, PASSWORD_ARGON2ID, [
-            'memory_cost' => 65536,
-            'time_cost' => 4,
-            'threads' => 3
+        // Try Argon2id first (most secure, PHP 7.3+)
+        if (defined('PASSWORD_ARGON2ID')) {
+            try {
+                return password_hash($password, PASSWORD_ARGON2ID, [
+                    'memory_cost' => 65536,
+                    'time_cost' => 4
+                    // Note: 'threads' option removed for broader compatibility
+                ]);
+            } catch (ValueError $e) {
+                // Fall back to bcrypt if Argon2id not supported
+            }
+        }
+        
+        // Fall back to bcrypt (PHP 5.5+, widely supported)
+        return password_hash($password, PASSWORD_BCRYPT, [
+            'cost' => 12
         ]);
     }
     
@@ -88,10 +100,18 @@ class EnderBitSecurity {
      * @return bool True if rehash needed, false otherwise
      */
     public static function needsRehash($hash) {
-        return password_needs_rehash($hash, PASSWORD_ARGON2ID, [
-            'memory_cost' => 65536,
-            'time_cost' => 4,
-            'threads' => 3
+        // Check if using outdated algorithm or cost factors
+        // First check against Argon2id if available
+        if (defined('PASSWORD_ARGON2ID')) {
+            return password_needs_rehash($hash, PASSWORD_ARGON2ID, [
+                'memory_cost' => 65536,
+                'time_cost' => 4
+            ]);
+        }
+        
+        // Fall back to bcrypt check
+        return password_needs_rehash($hash, PASSWORD_BCRYPT, [
+            'cost' => 12
         ]);
     }
     
