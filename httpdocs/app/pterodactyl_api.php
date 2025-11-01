@@ -49,7 +49,20 @@ class PterodactylAPI {
             return ['success' => true, 'data' => $result];
         }
         
-        return ['success' => false, 'error' => $result['errors'][0]['detail'] ?? 'API request failed', 'code' => $httpCode];
+        // Log detailed error for debugging
+        error_log("Pterodactyl API Error: HTTP $httpCode - " . print_r($result, true));
+        
+        // Return user-friendly error
+        $errorMessage = 'API request failed';
+        if (isset($result['errors'][0]['detail'])) {
+            $errorMessage = $result['errors'][0]['detail'];
+        } elseif (isset($result['message'])) {
+            $errorMessage = $result['message'];
+        } elseif ($httpCode === 401 || $httpCode === 403) {
+            $errorMessage = 'This action is unauthorized. Please check your Pterodactyl API key permissions.';
+        }
+        
+        return ['success' => false, 'error' => $errorMessage, 'code' => $httpCode];
     }
     
     /**
@@ -69,10 +82,17 @@ class PterodactylAPI {
             return $pterodactylUser;
         }
         
-        // Server creation payload
+        // Get available allocation
+        $allocation = self::getAvailableAllocation();
+        if (!$allocation) {
+            return ['success' => false, 'error' => 'No available server ports. Please contact support.'];
+        }
+        
+        // Server creation payload (Pterodactyl API v1 format)
         $payload = [
             'name' => $serverName,
             'user' => $pterodactylUser['data']['id'],
+            'nest' => self::getNestId($game),
             'egg' => self::getEggId($game),
             'docker_image' => self::getDockerImage($game),
             'startup' => self::getStartupCommand($game),
@@ -86,10 +106,11 @@ class PterodactylAPI {
             ],
             'feature_limits' => [
                 'databases' => 1,
+                'allocations' => 1,
                 'backups' => 2,
             ],
             'allocation' => [
-                'default' => self::getAvailableAllocation(),
+                'default' => $allocation,
             ],
         ];
         
@@ -204,6 +225,22 @@ class PterodactylAPI {
         ];
         
         file_put_contents($serversFile, json_encode($servers, JSON_PRETTY_PRINT));
+    }
+    
+    /**
+     * Get nest ID for game type
+     */
+    private static function getNestId($game) {
+        // Most games use nest 1 (Minecraft) or nest 2 (Generic Games)
+        // You may need to adjust these based on your Pterodactyl nests
+        $nestMap = [
+            'minecraft' => 1,
+            'rust' => 2,
+            'valheim' => 2,
+            'terraria' => 2,
+            'ark' => 2,
+        ];
+        return $nestMap[$game] ?? 1;
     }
     
     /**
