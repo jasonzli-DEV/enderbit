@@ -107,21 +107,32 @@ class PterodactylAPI {
      * Get or create Pterodactyl user
      */
     private static function getOrCreateUser($userId) {
+        // $userId is actually the user's email (from session)
+        $userEmail = $userId;
+        
         // Load user from main site
         $appConfig = require __DIR__ . '/config.php';
         $usersFile = $appConfig['users_file'];
-        $users = json_decode(file_get_contents($usersFile), true) ?? [];
         
         $user = null;
-        foreach ($users as $u) {
-            if ($u['id'] === $userId) {
-                $user = $u;
-                break;
+        if (file_exists($usersFile)) {
+            $users = json_decode(file_get_contents($usersFile), true) ?? [];
+            
+            // Find user by email
+            foreach ($users as $u) {
+                if ($u['email'] === $userEmail) {
+                    $user = $u;
+                    break;
+                }
             }
         }
         
+        // If user not found in users.json, create basic user info from email
         if (!$user) {
-            return ['success' => false, 'error' => 'User not found'];
+            $user = [
+                'email' => $userEmail,
+                'username' => explode('@', $userEmail)[0], // Use part before @ as username
+            ];
         }
         
         // Check if user exists in Pterodactyl
@@ -134,9 +145,9 @@ class PterodactylAPI {
         // Create user in Pterodactyl
         $payload = [
             'email' => $user['email'],
-            'username' => $user['username'] ?? 'user_' . $userId,
+            'username' => $user['username'] ?? 'user_' . time(),
             'first_name' => $user['username'] ?? 'User',
-            'last_name' => $userId,
+            'last_name' => 'Account',
         ];
         
         return self::apiRequest('/users', 'POST', $payload, true);
