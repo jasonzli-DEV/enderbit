@@ -88,8 +88,46 @@ class CPXResearch {
     }
     
     /**
-     * Verify callback from CPX Research
-     * CPX sends: user_id, transaction_id, currency_amount, payout, type, status
+     * Check if request is from CPX Research IP
+     */
+    public static function isValidCPXIP() {
+        $allowedIPs = [
+            '188.40.3.73',
+            '2a01:4f8:d0a:30ff::2',
+            '157.90.97.92'
+        ];
+        
+        $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
+        
+        // Also check X-Forwarded-For if behind proxy
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $forwardedIPs = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $clientIP = trim($forwardedIPs[0]);
+        }
+        
+        return in_array($clientIP, $allowedIPs);
+    }
+    
+    /**
+     * Verify callback hash from CPX Research
+     * Formula: md5(trans_id-your_app_secure_hash)
+     */
+    public static function verifyCallbackHash($transId, $receivedHash) {
+        self::init();
+        
+        if (empty(self::$config['secret_key'])) {
+            // If no secret key, skip hash verification
+            return true;
+        }
+        
+        // CPX callback hash: md5(trans_id-secure_key)
+        $expectedHash = md5($transId . '-' . self::$config['secret_key']);
+        
+        return hash_equals($expectedHash, $receivedHash);
+    }
+    
+    /**
+     * Verify callback from CPX Research (basic validation)
      */
     public static function verifyCallback($params) {
         self::init();

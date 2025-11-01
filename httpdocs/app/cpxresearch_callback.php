@@ -4,12 +4,15 @@
  * Receives and processes reward notifications from CPX Research
  * 
  * CPX Research sends callbacks with these parameters:
+ * - status: 1 = completed, 2 = canceled
+ * - trans_id: Unique transaction ID
  * - user_id: Your ext_user_id
- * - transaction_id: Unique transaction ID
- * - currency_amount: Amount in your local currency
- * - payout: Payout amount
- * - type: Survey type (survey, video, offer, etc.)
- * - status: Transaction status (active, completed, reversed)
+ * - subid_1: Your subId1
+ * - subid_2: Your subId2
+ * - amount_local: Amount in your local currency
+ * - amount_usd: Amount in USD
+ * - type: "out", "complete", or "bonus"
+ * - secure_hash: MD5 hash for validation: md5(trans_id-your_app_secure_hash)
  */
 
 // Set response type
@@ -17,32 +20,44 @@ header('Content-Type: text/plain');
 
 require_once __DIR__ . '/cpxresearch.php';
 
-// Get callback parameters from CPX Research
-// They can send via GET or POST
+// Get callback parameters from CPX Research (using ACTUAL parameter names)
+$status = $_GET['status'] ?? $_POST['status'] ?? '';
+$transId = $_GET['trans_id'] ?? $_POST['trans_id'] ?? '';
 $userId = $_GET['user_id'] ?? $_POST['user_id'] ?? '';
-$transactionId = $_GET['transaction_id'] ?? $_POST['transaction_id'] ?? '';
-$currencyAmount = $_GET['currency_amount'] ?? $_POST['currency_amount'] ?? 0;
-$payout = $_GET['payout'] ?? $_POST['payout'] ?? 0;
-$type = $_GET['type'] ?? $_POST['type'] ?? 'survey';
-$status = $_GET['status'] ?? $_POST['status'] ?? 'completed';
+$subid1 = $_GET['subid_1'] ?? $_POST['subid_1'] ?? '';
+$subid2 = $_GET['subid_2'] ?? $_POST['subid_2'] ?? '';
+$amountLocal = $_GET['amount_local'] ?? $_POST['amount_local'] ?? 0;
+$amountUsd = $_GET['amount_usd'] ?? $_POST['amount_usd'] ?? 0;
+$type = $_GET['type'] ?? $_POST['type'] ?? '';
+$secureHash = $_GET['secure_hash'] ?? $_POST['secure_hash'] ?? '';
 
 // Log ALL incoming parameters for debugging
 $logFile = __DIR__ . '/cpxresearch_callbacks.log';
 $allParams = array_merge($_GET, $_POST);
+$clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $logEntry = sprintf(
-    "[%s] Callback received - Raw params: %s\n",
+    "[%s] Callback received from IP: %s - Raw params: %s\n",
     date('Y-m-d H:i:s'),
+    $clientIP,
     json_encode($allParams)
 );
 file_put_contents($logFile, $logEntry, FILE_APPEND);
 
+// Optional: Check if request is from CPX Research IP (uncomment to enable)
+// require_once __DIR__ . '/cpxresearch.php';
+// if (!CPXResearch::isValidCPXIP()) {
+//     file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] ERROR: Invalid IP: $clientIP\n", FILE_APPEND);
+//     echo "error: invalid ip";
+//     exit;
+// }
+
 // Validate required parameters
-if (empty($userId) || empty($transactionId)) {
+if (empty($userId) || empty($transId)) {
     $logEntry = sprintf(
-        "[%s] ERROR: Missing required parameters - User: %s | TxnID: %s\n",
+        "[%s] ERROR: Missing required parameters - User: %s | TransID: %s\n",
         date('Y-m-d H:i:s'),
         $userId,
-        $transactionId
+        $transId
     );
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     
@@ -50,37 +65,49 @@ if (empty($userId) || empty($transactionId)) {
     exit;
 }
 
-// Verify callback (basic validation)
-$params = [
-    'user_id' => $userId,
-    'transaction_id' => $transactionId,
-    'currency_amount' => $currencyAmount,
-    'payout' => $payout,
-    'type' => $type,
-    'status' => $status,
-];
+// Verify secure hash
+if (!empty($secureHash)) {
+    require_once __DIR__ . '/cpxresearch.php';
+    if (!CPXResearch::verifyCallbackHash($transId, $secureHash)) {
+        $logEntry = sprintf(
+            "[%s] ERROR: Invalid secure hash - User: %s | TransID: %s\n",
+            date('Y-m-d H:i:s'),
+            $userId,
+            $transId
+        );
+        file_put_contents($logFile, $logEntry, FILE_APPEND);
+        
+        echo "error: invalid hash";
+        exit;
+    }
+}
 
-if (!CPXResearch::verifyCallback($params)) {
+// Check status: 1 = completed, 2 = canceled
+if ($status == '2') {
+    // Status 2 = canceled/fraud detected
+    // TODO: You may want to REVERSE the credits here
     $logEntry = sprintf(
-        "[%s] ERROR: Callback validation failed - User: %s | TxnID: %s\n",
+        "[%s] CANCELED: Transaction canceled/fraud - User: %s | TransID: %s | Type: %s\n",
         date('Y-m-d H:i:s'),
         $userId,
-        $transactionId
+        $transId,
+        $type
     );
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     
-    echo "error: validation failed";
+    echo "ok"; // Still respond OK
     exit;
 }
 
-// Only process if status is completed or active
-if ($status !== 'completed' && $status !== 'active') {
+// Only process if status is 1 (completed) and type is "complete" or "bonus"
+if ($status != '1' || ($type != 'complete' && $type != 'bonus')) {
     $logEntry = sprintf(
-        "[%s] SKIPPED: Status is %s (not completed/active) - User: %s | TxnID: %s\n",
+        "[%s] SKIPPED: Status=%s, Type=%s - User: %s | TransID: %s\n",
         date('Y-m-d H:i:s'),
         $status,
+        $type,
         $userId,
-        $transactionId
+        $transId
     );
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     
@@ -88,18 +115,21 @@ if ($status !== 'completed' && $status !== 'active') {
     exit;
 }
 
-// Use payout amount (this is what user earned)
-$amount = !empty($payout) ? $payout : $currencyAmount;
+// Use amount_local (your currency)
+$amount = $amountLocal;
 
 // Process the reward
-if (CPXResearch::processReward($userId, $amount, $transactionId, $type, $status)) {
+require_once __DIR__ . '/cpxresearch.php';
+if (CPXResearch::processReward($userId, $amount, $transId, $type, $status)) {
     $logEntry = sprintf(
-        "[%s] SUCCESS: Reward processed - User: %s | Amount: %s | TxnID: %s | Type: %s\n",
+        "[%s] SUCCESS: Reward processed - User: %s | Amount: %s | TransID: %s | Type: %s | SubID1: %s | SubID2: %s\n",
         date('Y-m-d H:i:s'),
         $userId,
         $amount,
-        $transactionId,
-        $type
+        $transId,
+        $type,
+        $subid1,
+        $subid2
     );
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     
@@ -107,14 +137,15 @@ if (CPXResearch::processReward($userId, $amount, $transactionId, $type, $status)
     echo "ok";
 } else {
     $logEntry = sprintf(
-        "[%s] ERROR: Failed to process reward - User: %s | Amount: %s | TxnID: %s\n",
+        "[%s] ERROR: Failed to process reward - User: %s | Amount: %s | TransID: %s\n",
         date('Y-m-d H:i:s'),
         $userId,
         $amount,
-        $transactionId
+        $transId
     );
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     
     echo "error: processing failed";
 }
+
 
